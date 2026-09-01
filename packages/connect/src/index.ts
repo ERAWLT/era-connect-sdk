@@ -127,6 +127,8 @@ export type { SolSignatureResult, SolSignRequestProps } from './chains/solana';
 export { SolanaChain, SolSignType } from './chains/solana';
 export type { TronLatestBlock, TronSignatureResult, TronSignRequestProps } from './chains/tron';
 export { TronChain } from './chains/tron';
+// UTF-8 helpers that work on every Hermes version (TextEncoder does not):
+export { utf8Decode, utf8Encode } from './core/bytes';
 export type { EraErrorCode } from './core/errors';
 export { EraSdkError } from './core/errors';
 export type { RandomBytesFn } from './core/rand';
