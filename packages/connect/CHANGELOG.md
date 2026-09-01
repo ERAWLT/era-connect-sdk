@@ -1,5 +1,13 @@
 # @hwlt/era-connect
 
+## 0.5.1
+
+### Patch Changes
+
+- [`0327cce`](https://github.com/ERAWLT/era-connect-sdk/commit/0327ccebd8a4b48981d1f51fe56fe53489078848) Thanks [@gsyabruk](https://github.com/gsyabruk)! - Update the package description and README intro to name the full chain list —
+  EVM, Bitcoin (+ Litecoin, Dogecoin, Dash, Bitcoin Cash), Solana, Tron, TON,
+  Cardano, Sui, Cosmos and XRP — instead of the original four launch chains.
+
 ## 0.5.0
 
 ### Minor Changes
