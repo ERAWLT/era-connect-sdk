@@ -11,12 +11,28 @@ import type { EraAccounts as EraAccountsType } from './accounts/accounts';
 import { EraAccounts } from './accounts/accounts';
 import { BtcChain } from './chains/btc';
 import { CardanoChain } from './chains/cardano';
+
+export type {
+  CosmosSignatureResult,
+  CosmosSignRequestProps,
+  EthermintSignRequestProps,
+} from './chains/cosmos';
+export type {
+  SuiSignatureResult,
+  SuiSignHashRequestProps,
+  SuiSignRequestProps,
+} from './chains/sui';
+export type { XrpSignatureResult, XrpSignRequestProps } from './chains/xrp';
+
+import { CosmosChain } from './chains/cosmos';
 import { EvmChain } from './chains/evm';
 import type { ChainContext, EraConnectConfig } from './chains/shared';
 import { resolveContext } from './chains/shared';
 import { SolanaChain } from './chains/solana';
+import { SuiChain } from './chains/sui';
 import { TonChain } from './chains/ton';
 import { TronChain } from './chains/tron';
+import { XrpChain } from './chains/xrp';
 import type { HardwareCallRequest, KeyDerivationCallProps } from './hardware-call/key-derivation';
 import { generateKeyDerivationCall } from './hardware-call/key-derivation';
 import { RawModule } from './raw';
@@ -44,6 +60,9 @@ export class EraConnect {
   private _tron: TronChain | undefined;
   private _ton: TonChain | undefined;
   private _cardano: CardanoChain | undefined;
+  private _sui: SuiChain | undefined;
+  private _cosmos: CosmosChain | undefined;
+  private _xrp: XrpChain | undefined;
   private _raw: RawModule | undefined;
 
   constructor(config?: EraConnectConfig) {
@@ -78,6 +97,21 @@ export class EraConnect {
   get cardano(): CardanoChain {
     this._cardano ??= new CardanoChain(this.context);
     return this._cardano;
+  }
+
+  get sui(): SuiChain {
+    this._sui ??= new SuiChain(this.context);
+    return this._sui;
+  }
+
+  get cosmos(): CosmosChain {
+    this._cosmos ??= new CosmosChain(this.context);
+    return this._cosmos;
+  }
+
+  get xrp(): XrpChain {
+    this._xrp ??= new XrpChain(this.context);
+    return this._xrp;
   }
 
   /** Escape hatch for UR types without a dedicated module. */
@@ -120,6 +154,7 @@ export {
   EraAccounts,
   EvmAccountView,
   SolanaAccountView,
+  SuiAccountView,
   TonAccountView,
   TronAccountView,
 } from './accounts/accounts';
@@ -138,6 +173,7 @@ export type {
   CardanoWitness,
 } from './chains/cardano';
 export { CardanoChain, parseWitnessSet } from './chains/cardano';
+export { CosmosChain, CosmosDataType } from './chains/cosmos';
 export type { EvmSignatureResult, EvmSignRequestProps } from './chains/evm';
 export { EvmChain, EvmDataType } from './chains/evm';
 export type {
@@ -149,10 +185,12 @@ export type {
 export { DEFAULT_ORIGIN } from './chains/shared';
 export type { SolSignatureResult, SolSignRequestProps } from './chains/solana';
 export { SolanaChain, SolSignType } from './chains/solana';
+export { SuiChain, suiIntentDigest } from './chains/sui';
 export type { TonSignatureResult, TonSignRequestProps } from './chains/ton';
 export { TonChain, TonDataType } from './chains/ton';
 export type { TronLatestBlock, TronSignatureResult, TronSignRequestProps } from './chains/tron';
 export { TronChain } from './chains/tron';
+export { XrpChain } from './chains/xrp';
 // UTF-8 helpers that work on every Hermes version (TextEncoder does not):
 export { utf8Decode, utf8Encode } from './core/bytes';
 export type { EraErrorCode } from './core/errors';

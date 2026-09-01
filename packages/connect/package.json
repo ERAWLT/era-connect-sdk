@@ -36,6 +36,9 @@
     "evm",
     "btc",
     "solana",
+    "xrp",
+    "cosmos",
+    "sui",
     "cardano",
     "ton",
     "tron",
@@ -124,6 +127,39 @@
       "require": {
         "types": "./dist/cardano.d.cts",
         "default": "./dist/cardano.cjs"
+      }
+    },
+    "./sui": {
+      "react-native": "./dist/sui.js",
+      "import": {
+        "types": "./dist/sui.d.ts",
+        "default": "./dist/sui.js"
+      },
+      "require": {
+        "types": "./dist/sui.d.cts",
+        "default": "./dist/sui.cjs"
+      }
+    },
+    "./cosmos": {
+      "react-native": "./dist/cosmos.js",
+      "import": {
+        "types": "./dist/cosmos.d.ts",
+        "default": "./dist/cosmos.js"
+      },
+      "require": {
+        "types": "./dist/cosmos.d.cts",
+        "default": "./dist/cosmos.cjs"
+      }
+    },
+    "./xrp": {
+      "react-native": "./dist/xrp.js",
+      "import": {
+        "types": "./dist/xrp.d.ts",
+        "default": "./dist/xrp.js"
+      },
+      "require": {
+        "types": "./dist/xrp.d.cts",
+        "default": "./dist/xrp.cjs"
       }
     },
     "./verify": {

@@ -19,9 +19,13 @@ air-gapped animated QR codes. Four steps, four chains, one SDK.
 - [Tron](chains/tron.md) — any contract via `rawData`
 - [TON](chains/ton.md) — BoC root-hash signing, TON Connect proofs
 - [Cardano](chains/cardano.md) — witness sets, soft-derived vkey binding
+- [Sui](chains/sui.md) — intent-message signing, local address derivation
+- [Cosmos](chains/cosmos.md) — ~35 zones incl. Ethermint in one module
+- [XRP](chains/xrp.md) — the XRP Toolkit `ur:bytes` convention
+- Litecoin / Dogecoin / Dash — see [Bitcoin](chains/bitcoin.md) (`crypto-psbt-extend`)
 
-The device supports more chains than the dedicated modules (Cosmos, Sui, Litecoin/Dogecoin/Dash/BCH, XRP) — they speak standard UR types
-through `era.raw` and the scanner today; see the
+Bitcoin Cash remains envelope-only for now; anything newer the device
+learns speaks standard UR types through `era.raw` and the scanner — see the
 [chain-support table](../packages/connect/README.md#chain-support).
 
 ## Advanced

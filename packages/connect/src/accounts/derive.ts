@@ -1,4 +1,5 @@
 import { secp256k1 } from '@noble/curves/secp256k1';
+import { blake2b } from '@noble/hashes/blake2b';
 import { ripemd160 } from '@noble/hashes/ripemd160';
 import { sha256 } from '@noble/hashes/sha2';
 import { keccak_256 } from '@noble/hashes/sha3';
@@ -75,6 +76,12 @@ export function btcNestedSegwitAddressFromPublicKey(
 export function tronAddressFromPublicKey(publicKey33: Uint8Array): string {
   const hash = keccak_256(uncompressed(publicKey33).slice(1));
   return base58check.encode(concatBytes(new Uint8Array([0x41]), hash.slice(12)));
+}
+
+/** `0x` Sui address: BLAKE2b-256 of the scheme flag (0x00 = Ed25519) plus the public key. */
+export function suiAddressFromPublicKey(publicKey32: Uint8Array): string {
+  const digest = blake2b(concatBytes(new Uint8Array([0x00]), publicKey32), { dkLen: 32 });
+  return `0x${bytesToHex(digest)}`;
 }
 
 /** A Solana address IS the Ed25519 public key, base58. */

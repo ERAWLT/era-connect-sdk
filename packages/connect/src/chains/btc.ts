@@ -20,9 +20,26 @@ import {
   toUr,
 } from './shared';
 
+/** Bitcoin-family coins the PSBT path signs for (BCH needs the FORKID signer and is not offered here). */
+export type PsbtCoin = 'btc' | 'ltc' | 'doge' | 'dash';
+
+/** `crypto-psbt-extend` coin ids (the device's own coin-type table). */
+const PSBT_EXTEND_COIN_ID: Record<Exclude<PsbtCoin, 'btc'>, number> = {
+  ltc: 2,
+  doge: 3,
+  dash: 5,
+};
+
 export interface BtcPsbtSignRequestProps {
   /** Raw PSBT v0 bytes (BIP-174). The device's signer relies on the global UNSIGNED_TX. */
   readonly psbt: Uint8Array;
+  /**
+   * `'btc'` (default) rides plain `crypto-psbt`; Litecoin/Dogecoin/Dash ride
+   * `crypto-psbt-extend` — the same PSBT plus the coin id, answered in kind.
+   * Build the PSBT with the coin's own derivation paths (LTC `m/84'/2'/…`,
+   * DOGE `m/44'/3'/…`, DASH `m/44'/5'/…`).
+   */
+  readonly coin?: PsbtCoin;
 }
 
 export interface BtcPsbtResult {
@@ -54,6 +71,7 @@ export interface BtcMessageSignatureResult {
 }
 
 const PSBT_REPLY_TYPES = ['crypto-psbt'] as const;
+const PSBT_EXTEND_REPLY_TYPES = ['crypto-psbt-extend', 'crypto-psbt'] as const;
 const MESSAGE_REPLY_TYPES = ['btc-signature'] as const;
 
 export class BtcChain {
@@ -79,26 +97,39 @@ export class BtcChain {
     if (props.psbt.length === 0) {
       throw new EraSdkError('invalid-props', 'psbt must not be empty');
     }
-    const ur = new UrValue('crypto-psbt', cborEncode(cbBytes(props.psbt)));
+    const coin = props.coin ?? 'btc';
+    const ur =
+      coin === 'btc'
+        ? new UrValue('crypto-psbt', cborEncode(cbBytes(props.psbt)))
+        : new UrValue(
+            'crypto-psbt-extend',
+            cborEncode(
+              cbMap([
+                [1, cbBytes(props.psbt)],
+                [2, cbUint(PSBT_EXTEND_COIN_ID[coin])],
+              ]),
+            ),
+          );
     return makeSignRequest({
       ur,
-      replyTypes: PSBT_REPLY_TYPES,
+      replyTypes: coin === 'btc' ? PSBT_REPLY_TYPES : PSBT_EXTEND_REPLY_TYPES,
       context: this.context,
       parse: (reply) => this.parsePsbt(reply),
     });
   }
 
-  /** Parse a `crypto-psbt` reply: the signed (not finalized) PSBT bytes. */
+  /** Parse a `crypto-psbt` / `crypto-psbt-extend` reply: the signed (not finalized) PSBT bytes. */
   parsePsbt(input: Ur | string): BtcPsbtResult {
     const ur = toUr(input);
-    requireUrType(ur, [...PSBT_REPLY_TYPES], 'crypto-psbt');
+    requireUrType(ur, [...PSBT_EXTEND_REPLY_TYPES], 'crypto-psbt');
     let decoded: CborValue;
     try {
       decoded = cborDecode(ur.cbor);
     } catch (e) {
       throw new EraSdkError('malformed-cbor', `crypto-psbt reply: ${(e as Error).message}`);
     }
-    const bytes = asBytes(decoded);
+    // Plain form: a bare byte string. Extend form: {1: psbt, 2: coinId}.
+    const bytes = asBytes(decoded) ?? asBytes(mapGet(decoded, 1));
     if (!bytes) {
       throw new EraSdkError('malformed-reply', 'crypto-psbt reply is not a byte string');
     }

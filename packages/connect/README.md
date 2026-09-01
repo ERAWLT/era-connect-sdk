@@ -79,6 +79,10 @@ today and speaks the rest through the same primitives.
 | Tron | structured envelope (any contract via `rawData`) | UTF-8 in `rawData` | `@hwlt/era-connect/tron` |
 | TON | `ton-sign-request` (BoC root-hash signing) | TON Connect proof | `@hwlt/era-connect/ton` |
 | Cardano | `cardano-sign-request` (witness-set replies, soft-derived vkey binding) | — | `@hwlt/era-connect/cardano` |
+| Sui | `sui-sign-request` / hash variant | — | `@hwlt/era-connect/sui` |
+| Cosmos (~35 networks incl. Ethermint) | `cosmos-sign-request` / `evm-sign-request` | ADR-036 | `@hwlt/era-connect/cosmos` |
+| XRP | `ur:bytes` (XRP Toolkit convention) | — | `@hwlt/era-connect/xrp` |
+| Litecoin, Dogecoin, Dash | `crypto-psbt-extend` (same flow as Bitcoin) | — | `@hwlt/era-connect/btc` |
 
 **Also supported by the device** — usable today via `era.raw` +
 `era.scanner({expectedTypes})`, dedicated modules on the roadmap (order driven
@@ -86,11 +90,7 @@ by integrator demand):
 
 | Chain | Wire type | Module status |
 |---|---|---|
-| Cosmos (~35 networks, incl. Ethermint: INJ/EVMOS/DYM) | `cosmos-sign-request` / `evm-sign-request` | planned |
-| Sui | `sui-sign-request` / `sui-sign-hash-request` | planned |
-| Dogecoin | `crypto-psbt-extend` | planned |
-| Litecoin, Dash, Bitcoin Cash | structured envelope (as Tron) | planned |
-| XRP | `ur:bytes` (XRP Toolkit convention) | planned |
+| Bitcoin Cash | structured envelope (FORKID signing) | planned |
 
 Two things make the gap workable now: **linking already surfaces every account
 the device exports** (unknown chains still carry their path, fingerprint and

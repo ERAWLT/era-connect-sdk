@@ -27,6 +27,10 @@ anyone implementing the wire format without the SDK.
 | Cardano signData | The FULL tx CBOR array; the device signs BLAKE2b-256 of the ENCODED FIRST ELEMENT (the body) | digest recomputed by `verifyCardanoSignature` |
 | Cardano reply | A witness set `{0: #6.258([[vkey, sig]…])}` — one pair per unique signing path across utxos + certKeys | parsed into `witnesses`; set tag optional on parse |
 | Cardano linking | The account entry's origin keypath carries NO fingerprint (path-only) — resolve against the wrapper's master fingerprint | automatic in `parseAccounts` |
+| Sui hash requests | `sui-sign-hash-request` carries the 32-byte digest as a HEX STRING, not bytes | handled by `generateSignHashRequest` |
+| Cosmos vs Ethermint | Same CBOR tag (4101), different UR type strings; Ethermint signs keccak-256 over `m/44'/60'` keys and its address field is the ASCII bytes of the `0x` string | two builders on `era.cosmos` |
+| XRP wire | Untyped `ur:bytes` both ways (JSON in, signed binary out); NO request id — content verification is the only binding; the device always signs with `m/44'/144'/0'/0/0` | `verifyXrpSignature` mandatory |
+| Bitcoin family | LTC/DOGE/DASH ride `crypto-psbt-extend` = `{1: PSBT, 2: coin id}` (2/3/5), answered in kind; BCH needs the FORKID signer and is not offered on the PSBT path | `coin` option on `generatePsbtSignRequest` |
 | UR on the wire | Frames render UPPERCASE (QR alphanumeric mode); parsing is case-insensitive | `nextFrame()` / scanner |
 | QR asymmetry | Phone→device ~200 B frames at 8 fps; device→phone 150 B at 2.5 fps | `DeviceProfile` |
 | `origin` | Free-form label shown on the device for context; not security-relevant | config / per-request |

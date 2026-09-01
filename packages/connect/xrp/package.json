@@ -1,0 +1,6 @@
+{
+  "main": "../dist/xrp.cjs",
+  "module": "../dist/xrp.js",
+  "types": "../dist/xrp.d.ts",
+  "react-native": "../dist/xrp.js"
+}
