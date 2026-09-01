@@ -66,16 +66,36 @@ verifyEvmSignature({ signData: rlpBytes, dataType: 1,
 
 ## Chain support
 
+The ERA device is multichain; the SDK ships dedicated modules for four chains
+today and speaks the rest through the same primitives.
+
+**Dedicated modules:**
+
 | Chain | Sign transaction | Sign message | Subpath |
 |---|---|---|---|
 | EVM (all chains) | `eth-sign-request` | personal_sign / EIP-712 | `@hwlt/era-connect/evm` |
 | Bitcoin | `crypto-psbt` (PSBT v0) | legacy P2PKH only | `@hwlt/era-connect/btc` |
 | Solana | `sol-sign-request` | off-chain messages | `@hwlt/era-connect/solana` |
-| Tron | `keystone-sign-request` (any contract via `rawData`) | UTF-8 in `rawData` | `@hwlt/era-connect/tron` |
+| Tron | structured envelope (any contract via `rawData`) | UTF-8 in `rawData` | `@hwlt/era-connect/tron` |
 
-Subpath imports keep unrelated chains (and the `verify` crypto) out of your
-bundle. The device's chain list keeps growing — `era.raw` is the escape hatch
-for UR types this SDK has no module for yet.
+**Also supported by the device** — usable today via `era.raw` +
+`era.scanner({expectedTypes})`, dedicated modules on the roadmap (order driven
+by integrator demand):
+
+| Chain | Wire type | Module status |
+|---|---|---|
+| TON | `ton-sign-request` (incl. TON Connect proof) | next up |
+| Cosmos (~35 networks, incl. Ethermint: INJ/EVMOS/DYM) | `cosmos-sign-request` / `evm-sign-request` | planned |
+| Cardano | `cardano-sign-request` | planned |
+| Sui | `sui-sign-request` / `sui-sign-hash-request` | planned |
+| Dogecoin | `crypto-psbt-extend` | planned |
+| Litecoin, Dash, Bitcoin Cash | structured envelope (as Tron) | planned |
+| XRP | `ur:bytes` (XRP Toolkit convention) | planned |
+
+Two things make the gap workable now: **linking already surfaces every account
+the device exports** (unknown chains still carry their path, fingerprint and
+public key), and the scanner/fountain layer is chain-agnostic. The device's
+chain list keeps growing — confirm the current set with the ERA team.
 
 ## Documentation
 

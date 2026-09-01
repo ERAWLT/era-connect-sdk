@@ -2,7 +2,10 @@
 
 Air-gapped **ERA hardware wallet** integration for software wallets over
 animated QR codes (BC-UR / Keystone-compatible registry) — account linking
-and transaction signing for **EVM, Bitcoin, Solana and Tron**.
+and transaction signing for **EVM, Bitcoin, Solana and Tron**, with the rest
+of the device's chains (TON, Cosmos, Cardano, Sui, the Bitcoin family, XRP)
+reachable through the same primitives — see the chain-support table in the
+[package README](packages/connect/README.md#chain-support).
 
 - **npm package:** [`@hwlt/era-connect`](packages/connect) — headless,
   TypeScript, React-Native-first, zero I/O.
