@@ -17,7 +17,7 @@ import {
 } from './derive';
 
 /** Chain family of an exported account, matched by its derivation path — never by the note label. */
-export type AccountChain = 'evm' | 'btc' | 'solana' | 'tron' | 'unknown';
+export type AccountChain = 'evm' | 'btc' | 'solana' | 'tron' | 'ton' | 'unknown';
 
 export interface AccountKey {
   readonly chain: AccountChain;
@@ -55,6 +55,7 @@ function classify(path: readonly PathLevel[]): AccountChain {
   }
   if (p0.index === 44 && p1.index === 501) return 'solana';
   if (p0.index === 44 && p1.index === 195) return 'tron';
+  if (p0.index === 44 && p1.index === 607) return 'ton';
   return 'unknown';
 }
 
@@ -202,6 +203,33 @@ export class TronAccountView {
 }
 
 /**
+ * TON view: one Ed25519 key per account (`m/44'/607'/0'`), shared by the
+ * V4R2 and V5R1 wallet contracts — the contract version affects only the
+ * ADDRESS, which this SDK leaves to TON tooling (derive it from `publicKey`
+ * with @ton/core or equivalent).
+ */
+export class TonAccountView {
+  constructor(private readonly entry: RawAccountEntry) {}
+
+  get xfp(): string {
+    return xfpToHex(this.entry.xfp);
+  }
+
+  get accountPath(): string {
+    return formatPath([...this.entry.path]);
+  }
+
+  /** 32-byte Ed25519 public key — the signer for both wallet-contract versions. */
+  get publicKey(): Uint8Array {
+    return requireKey(this.entry, 32);
+  }
+
+  get name(): string | undefined {
+    return this.entry.name ?? this.entry.note ?? undefined;
+  }
+}
+
+/**
  * Solana view: Ed25519 has no public child derivation, so the device
  * pre-derives hardened accounts (`m/44'/501'/idx'`) and each entry IS a
  * signer. The public key, base58, IS the address.
@@ -321,6 +349,14 @@ export class EraAccounts {
   tron(): TronAccountView | undefined {
     const entry = this.raw.entries.find((e) => classify(e.path) === 'tron');
     return entry ? new TronAccountView(entry) : undefined;
+  }
+
+  /** The TON account (linked via the Tonkeeper-style `crypto-hdkey` export). */
+  ton(): TonAccountView | undefined {
+    const entry = this.raw.entries.find(
+      (e) => classify(e.path) === 'ton' && e.publicKey?.length === 32,
+    );
+    return entry ? new TonAccountView(entry) : undefined;
   }
 
   /** All pre-derived Solana signers (usually `m/44'/501'/0'..9'`). */

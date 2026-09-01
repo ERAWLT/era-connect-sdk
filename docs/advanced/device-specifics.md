@@ -21,6 +21,9 @@ anyone implementing the wire format without the SDK.
 | Tron xfp | Inside the protobuf the fingerprint is a lowercase hex STRING **zero-padded to 8 chars** — unpadded, one wallet in 256 (leading zero byte) cannot sign at all | padded at build |
 | Tron reply caps | gzip reply: ≤ 8 KiB compressed, ≤ 64 KiB inflated, streamed with the ISIZE truncation check | `limit-exceeded` / `gzip-error` |
 | Tron anti-replay | The protobuf `signId` echo (case-insensitive UUID) is the only binding — device bytes are broadcast verbatim | checked in `parse()` |
+| TON request id | ASCII bytes of the UUID STRING (tag 37) — not the 16-byte binary form other chains use; the echo is those bytes verbatim | emitted/normalized by the TON module |
+| TON digests | transaction = BoC ROOT CELL representation hash; TON Connect proof = `sha256(0xFFFF‖"ton-connect"‖sha256(payload))` | recomputed by `verifyTonSignature` |
+| TON linking | standalone minimal `crypto-hdkey` (`{key, keypath, name}`), not the multichain export; V4R2/V5R1 share the key — the contract version only changes the address | `parseAccounts` + `accounts.ton()` |
 | UR on the wire | Frames render UPPERCASE (QR alphanumeric mode); parsing is case-insensitive | `nextFrame()` / scanner |
 | QR asymmetry | Phone→device ~200 B frames at 8 fps; device→phone 150 B at 2.5 fps | `DeviceProfile` |
 | `origin` | Free-form label shown on the device for context; not security-relevant | config / per-request |

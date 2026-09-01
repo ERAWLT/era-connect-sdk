@@ -77,6 +77,7 @@ today and speaks the rest through the same primitives.
 | Bitcoin | `crypto-psbt` (PSBT v0) | legacy P2PKH only | `@hwlt/era-connect/btc` |
 | Solana | `sol-sign-request` | off-chain messages | `@hwlt/era-connect/solana` |
 | Tron | structured envelope (any contract via `rawData`) | UTF-8 in `rawData` | `@hwlt/era-connect/tron` |
+| TON | `ton-sign-request` (BoC root-hash signing) | TON Connect proof | `@hwlt/era-connect/ton` |
 
 **Also supported by the device** — usable today via `era.raw` +
 `era.scanner({expectedTypes})`, dedicated modules on the roadmap (order driven
@@ -84,7 +85,6 @@ by integrator demand):
 
 | Chain | Wire type | Module status |
 |---|---|---|
-| TON | `ton-sign-request` (incl. TON Connect proof) | next up |
 | Cosmos (~35 networks, incl. Ethermint: INJ/EVMOS/DYM) | `cosmos-sign-request` / `evm-sign-request` | planned |
 | Cardano | `cardano-sign-request` | planned |
 | Sui | `sui-sign-request` / `sui-sign-hash-request` | planned |

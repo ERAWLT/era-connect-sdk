@@ -92,6 +92,27 @@ export function parseMultiAccountsUr(input: Ur | string): RawMultiAccounts {
     throw new EraSdkError('malformed-cbor', 'wallet UR is not a CBOR map');
   }
 
+  // A standalone `crypto-hdkey` export (the single-account link some wallet
+  // profiles use — e.g. the TON one: `{3: key, 6: keypath, 10: name}`) IS the
+  // entry map itself: no master-fingerprint/list wrapper. The entry's origin
+  // fingerprint doubles as the master fingerprint.
+  if (type === 'crypto-hdkey') {
+    const entry = tryParseEntry(decoded);
+    if (!entry) {
+      throw new EraSdkError(
+        'malformed-reply',
+        'crypto-hdkey export carries no derivable account (missing origin keypath)',
+      );
+    }
+    return {
+      masterFingerprint: entry.xfp,
+      deviceName: null,
+      deviceId: null,
+      deviceVersion: null,
+      entries: [entry],
+    };
+  }
+
   const master = asUint(mapGet(root, 1));
   const list = asArray(mapGet(root, 2));
   if (master === undefined || !list) {

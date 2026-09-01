@@ -1,0 +1,6 @@
+{
+  "main": "../dist/ton.cjs",
+  "module": "../dist/ton.js",
+  "types": "../dist/ton.d.ts",
+  "react-native": "../dist/ton.js"
+}
