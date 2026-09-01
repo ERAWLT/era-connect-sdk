@@ -1,0 +1,6 @@
+{
+  "main": "../dist/cardano.cjs",
+  "module": "../dist/cardano.js",
+  "types": "../dist/cardano.d.ts",
+  "react-native": "../dist/cardano.js"
+}

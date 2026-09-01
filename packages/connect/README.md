@@ -78,6 +78,7 @@ today and speaks the rest through the same primitives.
 | Solana | `sol-sign-request` | off-chain messages | `@hwlt/era-connect/solana` |
 | Tron | structured envelope (any contract via `rawData`) | UTF-8 in `rawData` | `@hwlt/era-connect/tron` |
 | TON | `ton-sign-request` (BoC root-hash signing) | TON Connect proof | `@hwlt/era-connect/ton` |
+| Cardano | `cardano-sign-request` (witness-set replies, soft-derived vkey binding) | — | `@hwlt/era-connect/cardano` |
 
 **Also supported by the device** — usable today via `era.raw` +
 `era.scanner({expectedTypes})`, dedicated modules on the roadmap (order driven
@@ -86,7 +87,6 @@ by integrator demand):
 | Chain | Wire type | Module status |
 |---|---|---|
 | Cosmos (~35 networks, incl. Ethermint: INJ/EVMOS/DYM) | `cosmos-sign-request` / `evm-sign-request` | planned |
-| Cardano | `cardano-sign-request` | planned |
 | Sui | `sui-sign-request` / `sui-sign-hash-request` | planned |
 | Dogecoin | `crypto-psbt-extend` | planned |
 | Litecoin, Dash, Bitcoin Cash | structured envelope (as Tron) | planned |

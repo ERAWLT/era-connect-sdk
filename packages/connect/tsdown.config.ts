@@ -8,6 +8,7 @@ export default defineConfig({
     solana: 'src/solana.ts',
     tron: 'src/tron.ts',
     ton: 'src/ton.ts',
+    cardano: 'src/cardano.ts',
     verify: 'src/verify.ts',
   },
   format: ['esm', 'cjs'],

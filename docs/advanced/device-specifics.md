@@ -24,6 +24,9 @@ anyone implementing the wire format without the SDK.
 | TON request id | ASCII bytes of the UUID STRING (tag 37) — not the 16-byte binary form other chains use; the echo is those bytes verbatim | emitted/normalized by the TON module |
 | TON digests | transaction = BoC ROOT CELL representation hash; TON Connect proof = `sha256(0xFFFF‖"ton-connect"‖sha256(payload))` | recomputed by `verifyTonSignature` |
 | TON linking | standalone minimal `crypto-hdkey` (`{key, keypath, name}`), not the multichain export; V4R2/V5R1 share the key — the contract version only changes the address | `parseAccounts` + `accounts.ton()` |
+| Cardano signData | The FULL tx CBOR array; the device signs BLAKE2b-256 of the ENCODED FIRST ELEMENT (the body) | digest recomputed by `verifyCardanoSignature` |
+| Cardano reply | A witness set `{0: #6.258([[vkey, sig]…])}` — one pair per unique signing path across utxos + certKeys | parsed into `witnesses`; set tag optional on parse |
+| Cardano linking | The account entry's origin keypath carries NO fingerprint (path-only) — resolve against the wrapper's master fingerprint | automatic in `parseAccounts` |
 | UR on the wire | Frames render UPPERCASE (QR alphanumeric mode); parsing is case-insensitive | `nextFrame()` / scanner |
 | QR asymmetry | Phone→device ~200 B frames at 8 fps; device→phone 150 B at 2.5 fps | `DeviceProfile` |
 | `origin` | Free-form label shown on the device for context; not security-relevant | config / per-request |

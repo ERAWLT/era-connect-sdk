@@ -2,8 +2,8 @@
 
 Air-gapped **ERA hardware wallet** integration for software wallets over
 animated QR codes (BC-UR / Keystone-compatible registry) — account linking
-and transaction signing for **EVM, Bitcoin, Solana, Tron and TON**, with the rest
-of the device's chains (Cosmos, Cardano, Sui, the Bitcoin family, XRP)
+and transaction signing for **EVM, Bitcoin, Solana, Tron, TON and Cardano**, with
+the rest of the device's chains (Cosmos, Sui, the Bitcoin family, XRP)
 reachable through the same primitives — see the chain-support table in the
 [package README](packages/connect/README.md#chain-support).
 

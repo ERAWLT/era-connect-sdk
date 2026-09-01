@@ -8,6 +8,7 @@ import {
   btcNestedSegwitAddressFromPublicKey,
   btcP2pkhAddressFromPublicKey,
   btcP2wpkhAddressFromPublicKey,
+  cardanoSoftDerivePath,
   derivePublicKey,
   evmAddressFromPublicKey,
   serializeExtendedPublicKey,
@@ -17,7 +18,7 @@ import {
 } from './derive';
 
 /** Chain family of an exported account, matched by its derivation path — never by the note label. */
-export type AccountChain = 'evm' | 'btc' | 'solana' | 'tron' | 'ton' | 'unknown';
+export type AccountChain = 'evm' | 'btc' | 'solana' | 'tron' | 'ton' | 'cardano' | 'unknown';
 
 export interface AccountKey {
   readonly chain: AccountChain;
@@ -56,6 +57,7 @@ function classify(path: readonly PathLevel[]): AccountChain {
   if (p0.index === 44 && p1.index === 501) return 'solana';
   if (p0.index === 44 && p1.index === 195) return 'tron';
   if (p0.index === 44 && p1.index === 607) return 'ton';
+  if (p0.index === 1852 && p1.index === 1815) return 'cardano';
   return 'unknown';
 }
 
@@ -83,10 +85,13 @@ function requireKey(entry: RawAccountEntry, length: number): Uint8Array {
 
 /** EVM view over the linked wallet: one account xpub, addresses derived at `0/index`. */
 export class EvmAccountView {
-  constructor(private readonly entry: RawAccountEntry) {}
+  constructor(
+    private readonly entry: RawAccountEntry,
+    private readonly resolvedXfp: number,
+  ) {}
 
   get xfp(): string {
-    return xfpToHex(this.entry.xfp);
+    return xfpToHex(this.resolvedXfp);
   }
 
   get accountPath(): string {
@@ -122,10 +127,11 @@ export class BtcAccountView {
     private readonly entry: RawAccountEntry,
     private readonly testnet: boolean,
     readonly purpose: BtcPurpose,
+    private readonly resolvedXfp: number,
   ) {}
 
   get xfp(): string {
-    return xfpToHex(this.entry.xfp);
+    return xfpToHex(this.resolvedXfp);
   }
 
   get accountPath(): string {
@@ -181,10 +187,13 @@ export class BtcAccountView {
 
 /** Tron view: addresses derived at `0/index`. */
 export class TronAccountView {
-  constructor(private readonly entry: RawAccountEntry) {}
+  constructor(
+    private readonly entry: RawAccountEntry,
+    private readonly resolvedXfp: number,
+  ) {}
 
   get xfp(): string {
-    return xfpToHex(this.entry.xfp);
+    return xfpToHex(this.resolvedXfp);
   }
 
   get accountPath(): string {
@@ -209,10 +218,13 @@ export class TronAccountView {
  * with @ton/core or equivalent).
  */
 export class TonAccountView {
-  constructor(private readonly entry: RawAccountEntry) {}
+  constructor(
+    private readonly entry: RawAccountEntry,
+    private readonly resolvedXfp: number,
+  ) {}
 
   get xfp(): string {
-    return xfpToHex(this.entry.xfp);
+    return xfpToHex(this.resolvedXfp);
   }
 
   get accountPath(): string {
@@ -230,15 +242,61 @@ export class TonAccountView {
 }
 
 /**
+ * Cardano view (CIP-1852): the exported account key supports SOFT public
+ * derivation (BIP32-Ed25519), so payment (`0/i`), change (`1/i`) and stake
+ * (`2/0`) verification keys derive locally. Bech32 ADDRESS assembly is left
+ * to Cardano tooling — `deriveKey` hands you the raw vkeys it needs.
+ */
+export class CardanoAccountView {
+  constructor(
+    private readonly entry: RawAccountEntry,
+    private readonly resolvedXfp: number,
+  ) {}
+
+  get xfp(): string {
+    return xfpToHex(this.resolvedXfp);
+  }
+
+  get accountPath(): string {
+    return formatPath([...this.entry.path]);
+  }
+
+  /** The account-level extended public key material. */
+  get publicKey(): Uint8Array {
+    return requireKey(this.entry, 32);
+  }
+
+  get chainCode(): Uint8Array {
+    return withChainCode(this.entry);
+  }
+
+  /** Signing path for `role/index`, e.g. `pathFor(0, 0)` → `.../0/0`. */
+  pathFor(role: number, index: number): string {
+    return `${this.accountPath}/${role}/${index}`;
+  }
+
+  /** Soft-derived 32-byte verification key at `role/index` (0 payment, 1 change, 2 stake). */
+  deriveKey(role: number, index: number): Uint8Array {
+    return cardanoSoftDerivePath(requireKey(this.entry, 32), withChainCode(this.entry), [
+      role,
+      index,
+    ]);
+  }
+}
+
+/**
  * Solana view: Ed25519 has no public child derivation, so the device
  * pre-derives hardened accounts (`m/44'/501'/idx'`) and each entry IS a
  * signer. The public key, base58, IS the address.
  */
 export class SolanaAccountView {
-  constructor(private readonly entry: RawAccountEntry) {}
+  constructor(
+    private readonly entry: RawAccountEntry,
+    private readonly resolvedXfp: number,
+  ) {}
 
   get xfp(): string {
-    return xfpToHex(this.entry.xfp);
+    return xfpToHex(this.resolvedXfp);
   }
 
   get path(): string {
@@ -308,7 +366,7 @@ export class EraAccounts {
     return this.raw.entries.map((entry) => ({
       chain: classify(entry.path),
       path: formatPath([...entry.path]),
-      xfp: xfpToHex(entry.xfp),
+      xfp: xfpToHex(entry.xfp ?? this.raw.masterFingerprint),
       publicKey: entry.publicKey ?? undefined,
       chainCode: entry.chainCode ?? undefined,
       name: entry.name ?? undefined,
@@ -321,7 +379,12 @@ export class EraAccounts {
    * equals `accountPath`. Throws `account-not-found` — never a silent zero.
    */
   xfpFor(accountPath: string): string {
-    return xfpToHex(this.entryFor(accountPath).xfp);
+    return xfpToHex(this.resolveXfp(this.entryFor(accountPath)));
+  }
+
+  /** Entry xfp, falling back to the wrapper's master fingerprint (Cardano-style path-only origins). */
+  private resolveXfp(entry: RawAccountEntry): number {
+    return entry.xfp ?? this.raw.masterFingerprint;
   }
 
   /** The EVM account (standard `m/44'/60'/...` scheme), if the export carries one. */
@@ -330,7 +393,7 @@ export class EraAccounts {
       this.raw.entries.find(
         (e) => classify(e.path) === 'evm' && (e.note === null || e.note === 'account.standard'),
       ) ?? this.raw.entries.find((e) => classify(e.path) === 'evm');
-    return entry ? new EvmAccountView(entry) : undefined;
+    return entry ? new EvmAccountView(entry, this.resolveXfp(entry)) : undefined;
   }
 
   /**
@@ -343,12 +406,14 @@ export class EraAccounts {
     const entry = this.raw.entries.find(
       (e) => classify(e.path) === 'btc' && e.path[0]?.index === purpose,
     );
-    return entry ? new BtcAccountView(entry, options?.testnet ?? false, purpose) : undefined;
+    return entry
+      ? new BtcAccountView(entry, options?.testnet ?? false, purpose, this.resolveXfp(entry))
+      : undefined;
   }
 
   tron(): TronAccountView | undefined {
     const entry = this.raw.entries.find((e) => classify(e.path) === 'tron');
-    return entry ? new TronAccountView(entry) : undefined;
+    return entry ? new TronAccountView(entry, this.resolveXfp(entry)) : undefined;
   }
 
   /** The TON account (linked via the Tonkeeper-style `crypto-hdkey` export). */
@@ -356,14 +421,22 @@ export class EraAccounts {
     const entry = this.raw.entries.find(
       (e) => classify(e.path) === 'ton' && e.publicKey?.length === 32,
     );
-    return entry ? new TonAccountView(entry) : undefined;
+    return entry ? new TonAccountView(entry, this.resolveXfp(entry)) : undefined;
+  }
+
+  /** The Cardano account (CIP-1852 Icarus export), if the export carries one. */
+  cardano(): CardanoAccountView | undefined {
+    const entry = this.raw.entries.find(
+      (e) => classify(e.path) === 'cardano' && e.publicKey?.length === 32,
+    );
+    return entry ? new CardanoAccountView(entry, this.resolveXfp(entry)) : undefined;
   }
 
   /** All pre-derived Solana signers (usually `m/44'/501'/0'..9'`). */
   solana(): SolanaAccountView[] {
     return this.raw.entries
       .filter((e) => classify(e.path) === 'solana' && e.publicKey?.length === 32)
-      .map((e) => new SolanaAccountView(e));
+      .map((e) => new SolanaAccountView(e, this.resolveXfp(e)));
   }
 
   private entryFor(accountPath: string): RawAccountEntry {

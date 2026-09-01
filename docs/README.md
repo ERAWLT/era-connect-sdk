@@ -18,9 +18,9 @@ air-gapped animated QR codes. Four steps, four chains, one SDK.
 - [Solana](chains/solana.md) — transactions (incl. versioned), off-chain messages
 - [Tron](chains/tron.md) — any contract via `rawData`
 - [TON](chains/ton.md) — BoC root-hash signing, TON Connect proofs
+- [Cardano](chains/cardano.md) — witness sets, soft-derived vkey binding
 
-The device supports more chains than the dedicated modules (Cosmos,
-Cardano, Sui, Litecoin/Dogecoin/Dash/BCH, XRP) — they speak standard UR types
+The device supports more chains than the dedicated modules (Cosmos, Sui, Litecoin/Dogecoin/Dash/BCH, XRP) — they speak standard UR types
 through `era.raw` and the scanner today; see the
 [chain-support table](../packages/connect/README.md#chain-support).
 

@@ -121,3 +121,73 @@ export function serializeExtendedPublicKey(args: {
 }
 
 export { XPUB_VERSION, ZPUB_VERSION };
+
+// ---------------------------------------------------------------------------
+// Cardano (BIP32-Ed25519 / CIP-3 "V2") soft public derivation
+// ---------------------------------------------------------------------------
+
+import { ed25519 } from '@noble/curves/ed25519';
+import { hmac } from '@noble/hashes/hmac';
+import { sha512 } from '@noble/hashes/sha2';
+
+function u32le(value: number): Uint8Array {
+  return new Uint8Array([
+    value & 0xff,
+    (value >> 8) & 0xff,
+    (value >> 16) & 0xff,
+    (value >> 24) & 0xff,
+  ]);
+}
+
+function leBytesToBigint(bytes: Uint8Array): bigint {
+  let out = 0n;
+  for (let i = bytes.length - 1; i >= 0; i--) out = (out << 8n) | BigInt(bytes[i]!);
+  return out;
+}
+
+/**
+ * Public (soft) child of a BIP32-Ed25519 extended public key — the scheme
+ * Cardano wallets share account xpubs under (CIP-3/V2):
+ *
+ *   Z       = HMAC-SHA512(chainCode, 0x02 || A || le32(index))
+ *   childA  = A + [8 * ZL[0..28]] * B
+ *   childCC = HMAC-SHA512(chainCode, 0x03 || A || le32(index))[32..]
+ *
+ * Only non-hardened indices are derivable publicly, which is exactly what the
+ * role/index tail of a CIP-1852 path uses.
+ */
+export function cardanoSoftDeriveChild(
+  publicKey: Uint8Array,
+  chainCode: Uint8Array,
+  index: number,
+): { publicKey: Uint8Array; chainCode: Uint8Array } {
+  if (publicKey.length !== 32 || chainCode.length !== 32) {
+    throw new EraSdkError('invalid-props', 'Cardano derivation needs a 32-byte key and chain code');
+  }
+  if (!Number.isSafeInteger(index) || index < 0 || index >= 0x80000000) {
+    throw new EraSdkError('invalid-props', 'Cardano public derivation is soft-index only');
+  }
+  const z = hmac(sha512, chainCode, concatBytes(new Uint8Array([0x02]), publicKey, u32le(index)));
+  const cc = hmac(
+    sha512,
+    chainCode,
+    concatBytes(new Uint8Array([0x03]), publicKey, u32le(index)),
+  ).slice(32);
+  const scalar = 8n * leBytesToBigint(z.slice(0, 28));
+  const parent = ed25519.ExtendedPoint.fromHex(bytesToHex(publicKey));
+  const child = scalar === 0n ? parent : parent.add(ed25519.ExtendedPoint.BASE.multiply(scalar));
+  return { publicKey: child.toRawBytes(), chainCode: cc };
+}
+
+/** Soft-derive along several indices (e.g. role, then address index). */
+export function cardanoSoftDerivePath(
+  publicKey: Uint8Array,
+  chainCode: Uint8Array,
+  indices: readonly number[],
+): Uint8Array {
+  let node = { publicKey, chainCode };
+  for (const index of indices) {
+    node = cardanoSoftDeriveChild(node.publicKey, node.chainCode, index);
+  }
+  return node.publicKey;
+}
