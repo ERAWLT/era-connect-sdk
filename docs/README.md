@@ -23,9 +23,10 @@ air-gapped animated QR codes. Four steps, four chains, one SDK.
 - [Cosmos](chains/cosmos.md) — ~35 zones incl. Ethermint in one module
 - [XRP](chains/xrp.md) — the XRP Toolkit `ur:bytes` convention
 - Litecoin / Dogecoin / Dash — see [Bitcoin](chains/bitcoin.md) (`crypto-psbt-extend`)
+- [Bitcoin Cash](chains/bch.md) — the FORKID envelope, CashAddr, full-tx verification
 
-Bitcoin Cash remains envelope-only for now; anything newer the device
-learns speaks standard UR types through `era.raw` and the scanner — see the
+Anything newer the device learns speaks standard UR types through `era.raw`
+and the scanner — see the
 [chain-support table](../packages/connect/README.md#chain-support).
 
 ## Advanced

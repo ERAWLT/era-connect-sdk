@@ -1,0 +1,6 @@
+{
+  "main": "../dist/bch.cjs",
+  "module": "../dist/bch.js",
+  "types": "../dist/bch.d.ts",
+  "react-native": "../dist/bch.js"
+}

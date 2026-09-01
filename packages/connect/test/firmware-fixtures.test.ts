@@ -363,6 +363,101 @@ describe.skipIf(!enabled)('firmware fixture corpus (local, env-gated)', () => {
     }
   });
 
+  it('the bch keystone request rebuilds byte-for-byte and the device reply verifies', async () => {
+    const { encodeBchSignRequestProto } = await import('../src/tron-proto/messages');
+    const { decodeSignResultProto } = await import('../src/tron-proto/messages');
+    const { readFields } = await import('../src/tron-proto/wire');
+    const { verifyBchSignedTx, decodeBchRawTx } = await import('../src/verify/bch');
+    const { parsePath } = await import('../src/registry/keypath');
+    const cases = loadCases('bch.json');
+    expect(cases.length).toBeGreaterThan(0);
+    let processed = 0;
+    for (const c of cases) {
+      const request = decodeUrText(c.ur);
+      if (!request || request.type !== 'keystone-sign-request') continue;
+      processed += 1;
+      const requestProto = gunzipCapped(asBytes(mapGet(cborDecode(request.cbor), 1))!, 64 * 1024);
+
+      // Walk the reference protobuf into structured fields.
+      const text = (b: Uint8Array | undefined) => new TextDecoder().decode(b);
+      const base = readFields(requestProto);
+      const payload = readFields(base.find((f) => f.field === 3)!.bytes);
+      const signTx = readFields(payload.find((f) => f.field === 4)!.bytes);
+      expect(text(signTx.find((f) => f.field === 1)?.bytes)).toBe('BCH');
+      const signId = text(signTx.find((f) => f.field === 2)!.bytes);
+      const bchTx = readFields(signTx.find((f) => f.field === 10)!.bytes);
+      const inputs = bchTx
+        .filter((f) => f.field === 4)
+        .map((f) => {
+          const fields = readFields(f.bytes);
+          return {
+            txidHex: text(fields.find((x) => x.field === 1)!.bytes),
+            index: Number(fields.find((x) => x.field === 2)?.value ?? 0n),
+            value: fields.find((x) => x.field === 3)?.value ?? 0n,
+            publicKeyHex: text(fields.find((x) => x.field === 4)!.bytes),
+            ownerKeyPath: text(fields.find((x) => x.field === 5)!.bytes),
+          };
+        });
+      const outputs = bchTx
+        .filter((f) => f.field === 5)
+        .map((f) => {
+          const fields = readFields(f.bytes);
+          const changePath = fields.find((x) => x.field === 4)?.bytes;
+          return {
+            address: text(fields.find((x) => x.field === 1)!.bytes),
+            value: fields.find((x) => x.field === 2)?.value ?? 0n,
+            isChange: (fields.find((x) => x.field === 3)?.value ?? 0n) === 1n,
+            changeAddressPath: changePath ? text(changePath) : undefined,
+          };
+        });
+
+      // 1. The SDK writer must reproduce the reference wallet's bytes.
+      const rebuilt = encodeBchSignRequestProto({
+        xfpHex: text(payload.find((f) => f.field === 2)!.bytes),
+        signId,
+        timestamp: Number(signTx.find((f) => f.field === 4)?.value ?? 0n),
+        fee: bchTx.find((f) => f.field === 1)?.value ?? 0n,
+        dustThreshold: Number(bchTx.find((f) => f.field === 2)?.value ?? 0n),
+        inputs,
+        outputs,
+      });
+      expect(bytesToHex(rebuilt)).toBe(bytesToHex(requestProto));
+
+      // 2. The device reply must verify through OUR FORKID sighash against
+      //    keys derived from the case seed at each input's ownerKeyPath.
+      const reply = decodeUrText(c.expected_signature);
+      expect(reply?.type).toBe('keystone-sign-result');
+      const result = decodeSignResultProto(
+        gunzipCapped(asBytes(mapGet(cborDecode(reply!.cbor), 1))!, 64 * 1024),
+      );
+      expect(result.signId).toBe(signId);
+      const seed = hexToBytes(c.seed);
+      const verifyInputs = inputs.map((input) => ({
+        txid: input.txidHex,
+        index: input.index,
+        value: input.value,
+        publicKey: secp256k1KeyFromSeed(
+          seed,
+          parsePath(input.ownerKeyPath).map((l) => ({ index: l.index, hardened: l.hardened })),
+        ),
+      }));
+      const verdict = verifyBchSignedTx({
+        rawTx: result.rawTx,
+        inputs: verifyInputs,
+        outputs: outputs.map((o) => ({ address: o.address, value: o.value })),
+        txId: result.txId,
+      });
+      expect(verdict).toEqual({ ok: true, checked: true });
+
+      // The signed tx mirrors the signer's fixed parameters.
+      const tx = decodeBchRawTx(result.rawTx);
+      expect(tx.version).toBe(1);
+      expect(tx.locktime).toBe(0);
+      for (const input of tx.inputs) expect(input.sequence).toBe(0xfffffffd);
+    }
+    expect(processed).toBe(cases.length); // no case may slip through the decode gate
+  });
+
   it('the tron rawData corpus round-trips: layouts, reply frame, txid, caps', () => {
     const raw = JSON.parse(readFileSync(join(dir!, 'tron_rawdata.json'), 'utf8')) as {
       raw_data_hex: string;

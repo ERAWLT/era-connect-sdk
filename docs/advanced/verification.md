@@ -24,6 +24,7 @@ type VerifyResult =
 | `verifyBtcMessageHeader` | BIP-137 header names your address kind | A wrong header looks like success locally and fails in every downstream verifier |
 | `verifySolanaSignature` | Ed25519 verify against the signer key | Pass `broadcastMessageBytes` — on Solana "what was signed" and "what you send" drift legitimately (blockhash refresh) and must agree |
 | `verifyTronSignature` | Every signature recovers to the owner; `raw_data` byte-equal, or (rebuild path) same operation + validity window | An operation it cannot compare field-by-field is refused |
+| `verifyBchSignedTx` | Every outpoint/output/value equals the request; each input signed by the requested key with sighash 0x41, re-verified against a locally recomputed BIP-143 FORKID sighash | **Mandatory** — the reply is a complete broadcastable transaction; the `signId` echo alone does not prove its contents |
 
 ## The honest gap: EIP-712
 

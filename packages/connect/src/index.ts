@@ -24,6 +24,7 @@ export type {
 } from './chains/sui';
 export type { XrpSignatureResult, XrpSignRequestProps } from './chains/xrp';
 
+import { BchChain } from './chains/bch';
 import { CosmosChain } from './chains/cosmos';
 import { EvmChain } from './chains/evm';
 import type { ChainContext, EraConnectConfig } from './chains/shared';
@@ -58,6 +59,7 @@ export class EraConnect {
   private _btc: BtcChain | undefined;
   private _solana: SolanaChain | undefined;
   private _tron: TronChain | undefined;
+  private _bch: BchChain | undefined;
   private _ton: TonChain | undefined;
   private _cardano: CardanoChain | undefined;
   private _sui: SuiChain | undefined;
@@ -87,6 +89,12 @@ export class EraConnect {
   get tron(): TronChain {
     this._tron ??= new TronChain(this.context);
     return this._tron;
+  }
+
+  /** Bitcoin Cash — the structured keystone envelope (see `@hwlt/era-connect/bch`). */
+  get bch(): BchChain {
+    this._bch ??= new BchChain(this.context);
+    return this._bch;
   }
 
   get ton(): TonChain {
@@ -149,6 +157,7 @@ export class EraConnect {
 
 export type { AccountChain, AccountKey, BtcPurpose, DeviceInfo } from './accounts/accounts';
 export {
+  BchAccountView,
   BtcAccountView,
   CardanoAccountView,
   EraAccounts,
@@ -158,6 +167,13 @@ export {
   TonAccountView,
   TronAccountView,
 } from './accounts/accounts';
+export type {
+  BchSignatureResult,
+  BchSignRequestProps,
+  BchTxInput,
+  BchTxOutput,
+} from './chains/bch';
+export { BchChain } from './chains/bch';
 export type {
   BtcMessageSignatureResult,
   BtcMessageSignRequestProps,

@@ -20,7 +20,7 @@ import {
   toUr,
 } from './shared';
 
-/** Bitcoin-family coins the PSBT path signs for (BCH needs the FORKID signer and is not offered here). */
+/** Bitcoin-family coins the PSBT path signs for (BCH rides its own FORKID envelope: `@hwlt/era-connect/bch`). */
 export type PsbtCoin = 'btc' | 'ltc' | 'doge' | 'dash';
 
 /** `crypto-psbt-extend` coin ids (the device's own coin-type table). */
@@ -54,8 +54,10 @@ export interface BtcMessageSignRequestProps {
   readonly path: string;
   readonly xfp: string | number;
   /**
-   * The signing address. The device's message signer supports LEGACY P2PKH
-   * (`1...`) addresses only; a segwit address yields `empty-signature`.
+   * The signing address. Firmware 2.1.0+ signs for BIP-44/49/84 address
+   * kinds (Taproot is refused — BIP-137 has no header range for it); OLDER
+   * firmware signs legacy P2PKH (`1...`) only and answers a segwit address
+   * with `empty-signature`.
    */
   readonly address: string;
   readonly origin?: string;
@@ -192,17 +194,19 @@ function parseMessageSignature(
     throw new EraSdkError('malformed-reply', 'btc-signature is missing the signature (key 2)');
   }
   // The device answers a message request for an address its signer cannot
-  // handle (any non-legacy script type) with an EMPTY signature.
+  // handle with an EMPTY signature. On firmware 2.1.0+ that is Taproot only;
+  // older firmware refuses everything but legacy P2PKH this way.
   if (sigValue.length === 0) {
     throw new EraSdkError(
       'empty-signature',
-      'the device returned an empty signature — Bitcoin message signing supports legacy P2PKH (1...) addresses only',
+      'the device returned an empty signature — the address kind is not message-signable ' +
+        'on this firmware (older firmware: legacy P2PKH only; 2.1.0+: everything but Taproot)',
     );
   }
 
-  // Device quirk: the reply bytes are the ASCII of a base64 string, not raw
-  // signature bytes. Decode twice; tolerate a firmware that starts sending
-  // raw 65-byte signatures directly.
+  // Firmware 2.1.0+ sends the raw 65-byte signature; older firmware sends
+  // the ASCII of its base64. Accept both: try the double decode first, fall
+  // back to the raw bytes.
   let signature: Uint8Array;
   try {
     signature = base64.decode(asciiDecode(sigValue));

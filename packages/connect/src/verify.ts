@@ -6,6 +6,13 @@
  * arithmetic is bundled only by apps that import it (do).
  */
 
+export type {
+  DecodedBchTx,
+  VerifyBchInput,
+  VerifyBchOutput,
+  VerifyBchSignedTxArgs,
+} from './verify/bch';
+export { computeBchSighash, decodeBchRawTx, verifyBchSignedTx } from './verify/bch';
 export type { VerifyBtcMessageHeaderArgs, VerifySignedPsbtArgs } from './verify/btc';
 export { verifyBtcMessageHeader, verifySignedPsbt } from './verify/btc';
 export type { VerifyCardanoSignatureArgs } from './verify/cardano';

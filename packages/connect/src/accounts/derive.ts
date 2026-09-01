@@ -5,6 +5,7 @@ import { sha256 } from '@noble/hashes/sha2';
 import { keccak_256 } from '@noble/hashes/sha3';
 import { base58, bech32, createBase58check } from '@scure/base';
 import { HDKey } from '@scure/bip32';
+import { encodeCashAddr } from '../chains/cashaddr';
 import { bytesToHex, concatBytes, u32be } from '../core/bytes';
 import { EraSdkError } from '../core/errors';
 
@@ -44,6 +45,14 @@ export function evmAddressFromPublicKey(publicKey33: Uint8Array): `0x${string}` 
 
 function hash160(data: Uint8Array): Uint8Array {
   return ripemd160(sha256(data));
+}
+
+/** CashAddr P2PKH address (Bitcoin Cash) from a compressed public key. */
+export function bchAddressFromPublicKey(
+  publicKey33: Uint8Array,
+  options?: { withPrefix?: boolean },
+): string {
+  return encodeCashAddr('p2pkh', hash160(publicKey33), { withPrefix: options?.withPrefix });
 }
 
 /** P2WPKH (witness v0) bech32 address. */
