@@ -15,7 +15,10 @@ import { UrFountainEncoder } from '../src/ur/encoder';
 import { headerIsConsistent, UrLimits } from '../src/ur/limits';
 import { Ur } from '../src/ur/ur';
 
-const RUNS = { numRuns: 200 };
+// CI default; the nightly fuzz job scales this up via FC_NUM_RUNS.
+const BASE_RUNS = Number(process.env.FC_NUM_RUNS) || 200;
+const RUNS = { numRuns: BASE_RUNS };
+const MANY_RUNS = { numRuns: Math.max(BASE_RUNS * 10, 2000) };
 
 describe('fountain code properties', () => {
   it('assembles from any sufficient subset: drop, duplicate, reorder', () => {
@@ -72,7 +75,7 @@ describe('fountain code properties', () => {
           );
         },
       ),
-      { numRuns: 2000 },
+      MANY_RUNS,
     );
   });
 });
@@ -85,7 +88,7 @@ describe('the scanner never throws on arbitrary frames', () => {
         const result = scanner.receivePart(text);
         return ['progress', 'duplicate', 'rejected', 'complete'].includes(result.kind);
       }),
-      { numRuns: 2000 },
+      MANY_RUNS,
     );
   });
 
@@ -97,7 +100,7 @@ describe('the scanner never throws on arbitrary frames', () => {
         const result = scanner.receivePart(`ur:bytes/${letters}`);
         return ['progress', 'duplicate', 'rejected', 'complete'].includes(result.kind);
       }),
-      { numRuns: 2000 },
+      MANY_RUNS,
     );
   });
 });
@@ -199,7 +202,7 @@ describe('CBOR differential vs cbor2', () => {
         const canonical = cborEncode(decoded);
         return bytesToHex(cborEncode(cborDecode(canonical))) === bytesToHex(canonical);
       }),
-      { numRuns: 2000 },
+      MANY_RUNS,
     );
   });
 });
@@ -215,7 +218,7 @@ describe('protobuf and gzip hardening', () => {
         }
         return true;
       }),
-      { numRuns: 2000 },
+      MANY_RUNS,
     );
   });
 
@@ -234,7 +237,7 @@ describe('protobuf and gzip hardening', () => {
         }
         return true;
       }),
-      { numRuns: 2000 },
+      MANY_RUNS,
     );
   });
 

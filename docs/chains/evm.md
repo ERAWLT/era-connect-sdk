@@ -48,7 +48,9 @@ const signData = hexToBytes(serializeTransaction(unsigned)); // 0x02‖RLP(...)
 ## 2. Parse the signature
 
 ```ts
-const sig = request.scanner().parse(); // or era.evm.parseSignature(ur, { requestId })
+const scanner = request.scanner();   // create ONCE, feed it the camera frames
+// ... scanner.receivePart(frame) until { kind: 'complete' } ...
+const sig = scanner.parse();         // or era.evm.parseSignature(ur, { requestId })
 ```
 
 | Field | Type | Notes |

@@ -42,7 +42,8 @@ QR with a new transaction object (verification below is what catches that).
 ## 2. Parse the signature
 
 ```ts
-const sig = request.scanner().parse();
+const scanner = request.scanner();   // create ONCE, feed it the camera frames
+const sig = scanner.parse();
 sig.signature; // exactly 64 bytes, Ed25519
 ```
 
@@ -51,15 +52,15 @@ sig.signature; // exactly 64 bytes, Ed25519
 ```ts
 import { verifySolanaSignature } from '@era-wallet/connect/verify';
 
-const check = verifySolanaSignature({
+const tx = new VersionedTransaction(message);       // build FIRST — the check
+const check = verifySolanaSignature({               // must see what you send
   signData,
   signature: sig.signature,
   publicKey: sol.publicKey,
-  broadcastMessageBytes: tx.message.serialize(), // what you are ABOUT to send
+  broadcastMessageBytes: tx.message.serialize(),
 });
 if (!check.ok) throw new Error(check.reason);
 
-const tx = new VersionedTransaction(message);
 tx.addSignature(new PublicKey(sol.address), sig.signature);
 await connection.sendRawTransaction(tx.serialize());
 ```

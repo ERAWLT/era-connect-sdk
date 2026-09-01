@@ -17,7 +17,7 @@ pnpm start            # then run on a physical device (camera needed)
 
 The two files worth copying into a real integration:
 
-- [`src/AnimatedQrView.tsx`](expo-demo/src/AnimatedQrView.tsx) — the entire
+- [`src/AnimatedQrView.tsx`](src/AnimatedQrView.tsx) — the entire
   animated-QR renderer (~30 lines).
-- [`src/UrScannerView.tsx`](expo-demo/src/UrScannerView.tsx) — the camera →
+- [`src/UrScannerView.tsx`](src/UrScannerView.tsx) — the camera →
   `UrScanner` bridge with progress and repeat-deduplicated rejections.

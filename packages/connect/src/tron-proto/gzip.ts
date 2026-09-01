@@ -1,6 +1,7 @@
 import { Gunzip, gzipSync } from 'fflate';
 import { concatBytes } from '../core/bytes';
 import { EraSdkError } from '../core/errors';
+import { crc32 } from '../ur/crc32';
 
 /** Smallest possible gzip stream: 10-byte header + 8-byte trailer. */
 const MIN_GZIP_BYTES = 18;
@@ -84,6 +85,16 @@ export function gunzipCapped(data: Uint8Array, maxOutputBytes: number): Uint8Arr
       'gzip-error',
       `compressed payload inflated to ${out.length} bytes but declares ${isize} — truncated or malformed`,
     );
+  }
+  // The trailer CRC32 (little-endian, bytes n-8..n-5) must cover the inflated
+  // output. The streaming inflater does not verify it, and the reference
+  // implementation's native decoder does — without this check a corrupted
+  // stream, or a CONCATENATED multi-member stream (whose final member's CRC
+  // cannot cover the whole output), would be accepted here and refused there.
+  const declaredCrc =
+    (data[n - 8]! | (data[n - 7]! << 8) | (data[n - 6]! << 16) | (data[n - 5]! << 24)) >>> 0;
+  if (crc32(out) !== declaredCrc) {
+    throw new EraSdkError('gzip-error', 'compressed payload is malformed: CRC mismatch');
   }
   return out;
 }

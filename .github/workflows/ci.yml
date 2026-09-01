@@ -4,6 +4,7 @@ on:
   push:
     branches: [main]
   pull_request:
+  workflow_dispatch:
 
 jobs:
   test:
@@ -30,16 +31,18 @@ jobs:
         working-directory: packages/connect
       - name: Pack artifact for manual smoke installs
         if: matrix.node == 22
-        run: pnpm --filter @era-wallet/connect pack --out era-wallet-connect.tgz
+        run: pnpm pack --out era-wallet-connect.tgz
+        working-directory: packages/connect
       - uses: actions/upload-artifact@v4
         if: matrix.node == 22
         with:
           name: npm-tarball
           path: packages/connect/era-wallet-connect.tgz
+          if-no-files-found: error
 
   nightly-fuzz:
-    # Longer property-test runs on a schedule would go here (workflow_dispatch
-    # for now; add `schedule:` once the repository is active).
+    # Longer property-test runs; trigger manually (add `schedule:` once the
+    # repository is active).
     if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     steps:

@@ -26,7 +26,7 @@ export function cborDecode(bytes: Uint8Array): CborValue {
   return value;
 }
 
-const MAX_DEPTH = 8;
+const MAX_DEPTH = 16; // matches the encoder; see encode.ts
 
 function err(message: string): EraSdkError {
   return new EraSdkError('malformed-cbor', `cbor: ${message}`);

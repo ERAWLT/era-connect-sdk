@@ -1,4 +1,5 @@
 import type { EraAccounts, EraConnect, SignRequest } from '@era-wallet/connect';
+import { utf8Encode } from '@era-wallet/connect';
 import type { EvmSignatureResult } from '@era-wallet/connect/evm';
 import { EvmChain } from '@era-wallet/connect/evm';
 import { verifyEvmSignature } from '@era-wallet/connect/verify';
@@ -22,7 +23,8 @@ export function SignScreen(props: { era: EraConnect; accounts: EraAccounts }) {
     return <Text style={styles.error}>The linked wallet carries no EVM account.</Text>;
   }
   const address = evm.deriveAddress(0);
-  const signData = new TextEncoder().encode(message);
+  // utf8Encode works on every Hermes version (TextEncoder landed only in RN 0.74).
+  const signData = utf8Encode(message);
 
   const start = () => {
     setRequest(
@@ -48,11 +50,7 @@ export function SignScreen(props: { era: EraConnect; accounts: EraAccounts }) {
       )}
 
       {phase === 'show' && request && (
-        <View style={styles.block}>
-          <Text style={styles.h1}>Scan this with the device, review, approve</Text>
-          <AnimatedQrView animated={request.toAnimated()} />
-          <Button title="Device approved — scan its reply" onPress={() => setPhase('scan')} />
-        </View>
+        <ShowPhase request={request} onApproved={() => setPhase('scan')} />
       )}
 
       {phase === 'scan' && request && (
@@ -69,6 +67,20 @@ export function SignScreen(props: { era: EraConnect; accounts: EraAccounts }) {
 
       {phase === 'done' && <Text style={styles.ok}>{outcome}</Text>}
     </ScrollView>
+  );
+}
+
+function ShowPhase(props: { request: SignRequest<EvmSignatureResult>; onApproved: () => void }) {
+  // ONE AnimatedUr for the whole review — rebuilding it per render restarts
+  // the fountain sequence for no reason (and rebuilding the REQUEST would
+  // orphan the device's reply).
+  const animated = useMemo(() => props.request.toAnimated(), [props.request]);
+  return (
+    <View style={styles.block}>
+      <Text style={styles.h1}>Scan this with the device, review, approve</Text>
+      <AnimatedQrView animated={animated} />
+      <Button title="Device approved — scan its reply" onPress={props.onApproved} />
+    </View>
   );
 }
 

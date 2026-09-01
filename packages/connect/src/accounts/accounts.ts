@@ -5,6 +5,8 @@ import type { RawAccountEntry, RawMultiAccounts } from '../registry/multi-accoun
 import { parseMultiAccountsUr } from '../registry/multi-accounts';
 import type { Ur } from '../ur/ur';
 import {
+  btcNestedSegwitAddressFromPublicKey,
+  btcP2pkhAddressFromPublicKey,
   btcP2wpkhAddressFromPublicKey,
   derivePublicKey,
   evmAddressFromPublicKey,
@@ -26,8 +28,8 @@ export interface AccountKey {
    * account (lowercase 8-hex). NOT necessarily the master fingerprint.
    */
   readonly xfp: string;
-  /** 33-byte compressed secp256k1, or 32-byte Ed25519 (Solana). */
-  readonly publicKey: Uint8Array;
+  /** 33-byte compressed secp256k1, or 32-byte Ed25519 (Solana); absent when the export omitted it. */
+  readonly publicKey: Uint8Array | undefined;
   readonly chainCode: Uint8Array | undefined;
   readonly name: string | undefined;
   /** Derivation-scheme label (`account.standard`, ...) — display only. */
@@ -66,6 +68,18 @@ function withChainCode(entry: RawAccountEntry): Uint8Array {
   return entry.chainCode;
 }
 
+/** The entry's key at the required length, or a typed refusal (derivation only). */
+function requireKey(entry: RawAccountEntry, length: number): Uint8Array {
+  if (!entry.publicKey || entry.publicKey.length !== length) {
+    throw new EraSdkError(
+      'invalid-props',
+      `account ${formatPath([...entry.path])} carries no ${length}-byte public key; ` +
+        'xfp lookup still works, address derivation does not',
+    );
+  }
+  return entry.publicKey;
+}
+
 /** EVM view over the linked wallet: one account xpub, addresses derived at `0/index`. */
 export class EvmAccountView {
   constructor(private readonly entry: RawAccountEntry) {}
@@ -85,7 +99,7 @@ export class EvmAccountView {
 
   deriveAddress(index: number): `0x${string}` {
     return evmAddressFromPublicKey(
-      derivePublicKey(this.entry.publicKey, withChainCode(this.entry), 0, index),
+      derivePublicKey(requireKey(this.entry, 33), withChainCode(this.entry), 0, index),
     );
   }
 
@@ -94,11 +108,19 @@ export class EvmAccountView {
   }
 }
 
-/** Bitcoin view (the BIP-84 native-segwit account). */
+export type BtcPurpose = 44 | 49 | 84 | 86;
+
+/**
+ * Bitcoin view over one exported account. The default is the BIP-84
+ * native-segwit account; pass `purpose` to reach the other script types the
+ * device exports (44 = legacy P2PKH — the kind the device signs MESSAGES for,
+ * 49 = nested segwit, 86 = taproot).
+ */
 export class BtcAccountView {
   constructor(
     private readonly entry: RawAccountEntry,
     private readonly testnet: boolean,
+    readonly purpose: BtcPurpose,
   ) {}
 
   get xfp(): string {
@@ -119,18 +141,39 @@ export class BtcAccountView {
 
   deriveAddress(index: number, options?: { change?: boolean }): string {
     const change = options?.change ? 1 : 0;
-    return btcP2wpkhAddressFromPublicKey(
-      derivePublicKey(this.entry.publicKey, withChainCode(this.entry), change, index),
-      this.testnet ? 'tb' : 'bc',
+    const child = derivePublicKey(
+      requireKey(this.entry, 33),
+      withChainCode(this.entry),
+      change,
+      index,
     );
+    switch (this.purpose) {
+      case 84:
+        return btcP2wpkhAddressFromPublicKey(child, this.testnet ? 'tb' : 'bc');
+      case 44:
+        return btcP2pkhAddressFromPublicKey(child, this.testnet);
+      case 49:
+        return btcNestedSegwitAddressFromPublicKey(child, this.testnet);
+      case 86:
+        throw new EraSdkError(
+          'invalid-props',
+          'taproot addresses need the BIP-341 output-key tweak; derive them from xpub() with your Bitcoin library',
+        );
+    }
   }
 
   xpub(): string {
     return extendedKeyOf(this.entry);
   }
 
-  /** SLIP-132 zpub form of the same key, for tools that require it. */
+  /** SLIP-132 zpub form of the BIP-84 key, for tools that require it. */
   zpub(): string {
+    if (this.purpose !== 84) {
+      throw new EraSdkError(
+        'invalid-props',
+        'zpub is the SLIP-132 form of the BIP-84 account only',
+      );
+    }
     return extendedKeyOf(this.entry, ZPUB_VERSION);
   }
 }
@@ -153,7 +196,7 @@ export class TronAccountView {
 
   deriveAddress(index: number): string {
     return tronAddressFromPublicKey(
-      derivePublicKey(this.entry.publicKey, withChainCode(this.entry), 0, index),
+      derivePublicKey(requireKey(this.entry, 33), withChainCode(this.entry), 0, index),
     );
   }
 }
@@ -180,26 +223,24 @@ export class SolanaAccountView {
   }
 
   get publicKey(): Uint8Array {
-    return this.entry.publicKey;
+    return requireKey(this.entry, 32);
   }
 
   get address(): string {
-    return solanaAddressFromPublicKey(this.entry.publicKey);
+    return solanaAddressFromPublicKey(requireKey(this.entry, 32));
   }
 }
 
 function extendedKeyOf(entry: RawAccountEntry, version?: number): string {
   const chainCode = withChainCode(entry);
-  if (entry.publicKey.length !== 33) {
-    throw new EraSdkError('invalid-props', 'extended keys exist only for secp256k1 accounts');
-  }
+  const publicKey = requireKey(entry, 33);
   const last = entry.path[entry.path.length - 1]!;
   const args = {
     depth: entry.path.length,
     parentFingerprint: entry.parentFingerprint ?? 0,
     childNumber: last.hardened ? last.index + 0x80000000 : last.index,
     chainCode,
-    publicKey: entry.publicKey,
+    publicKey,
   };
   return version === undefined
     ? serializeExtendedPublicKey(args)
@@ -240,7 +281,7 @@ export class EraAccounts {
       chain: classify(entry.path),
       path: formatPath([...entry.path]),
       xfp: xfpToHex(entry.xfp),
-      publicKey: entry.publicKey,
+      publicKey: entry.publicKey ?? undefined,
       chainCode: entry.chainCode ?? undefined,
       name: entry.name ?? undefined,
       note: entry.note ?? undefined,
@@ -264,12 +305,17 @@ export class EraAccounts {
     return entry ? new EvmAccountView(entry) : undefined;
   }
 
-  /** The Bitcoin BIP-84 native-segwit account, if the export carries one. */
-  btc(options?: { testnet?: boolean }): BtcAccountView | undefined {
+  /**
+   * A Bitcoin account view. Defaults to the BIP-84 native-segwit account;
+   * pass `purpose: 44` for the legacy P2PKH account (message signing), 49 for
+   * nested segwit, 86 for taproot — if the export carries them.
+   */
+  btc(options?: { testnet?: boolean; purpose?: BtcPurpose }): BtcAccountView | undefined {
+    const purpose = options?.purpose ?? 84;
     const entry = this.raw.entries.find(
-      (e) => classify(e.path) === 'btc' && e.path[0]?.index === 84,
+      (e) => classify(e.path) === 'btc' && e.path[0]?.index === purpose,
     );
-    return entry ? new BtcAccountView(entry, options?.testnet ?? false) : undefined;
+    return entry ? new BtcAccountView(entry, options?.testnet ?? false, purpose) : undefined;
   }
 
   tron(): TronAccountView | undefined {
@@ -280,7 +326,7 @@ export class EraAccounts {
   /** All pre-derived Solana signers (usually `m/44'/501'/0'..9'`). */
   solana(): SolanaAccountView[] {
     return this.raw.entries
-      .filter((e) => classify(e.path) === 'solana')
+      .filter((e) => classify(e.path) === 'solana' && e.publicKey?.length === 32)
       .map((e) => new SolanaAccountView(e));
   }
 

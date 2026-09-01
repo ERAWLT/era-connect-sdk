@@ -16,7 +16,12 @@ import { parsePathComponents } from './keypath';
 export interface RawAccountEntry {
   readonly path: readonly PathLevel[];
   readonly xfp: number;
-  readonly publicKey: Uint8Array;
+  /**
+   * Nullable and length-unconstrained, as in the reference implementation: an
+   * entry without a usable key still resolves its xfp for signing — only the
+   * address-derivation views require the 33/32-byte forms.
+   */
+  readonly publicKey: Uint8Array | null;
   readonly chainCode: Uint8Array | null;
   readonly parentFingerprint: number | null;
   readonly name: string | null;
@@ -66,10 +71,13 @@ export function parseMultiAccountsUr(input: Ur | string): RawMultiAccounts {
   }
 
   if (!WALLET_UR_TYPES.has(type)) {
+    // The type is attacker-sized (the UR grammar allows an unbounded letter
+    // run) — truncate before it reaches a message or error data.
+    const shown = type.length > 32 ? `${type.slice(0, 32)}…` : type;
     throw new EraSdkError(
       'wrong-ur-type',
-      `"${type}" is not a wallet export; expected one of ${[...WALLET_UR_TYPES].join(', ')}`,
-      { received: type },
+      `"${shown}" is not a wallet export; expected one of ${[...WALLET_UR_TYPES].join(', ')}`,
+      { received: shown },
     );
   }
 
@@ -124,14 +132,11 @@ function tryParseEntry(item: CborValue): RawAccountEntry | null {
   const xfp = asUint(mapGet(origin, 2));
   if (!path || path.length === 0 || xfp === undefined || xfp > 0xffffffffn) return null;
 
-  const publicKey = asBytes(mapGet(map, 3));
-  if (!publicKey || (publicKey.length !== 33 && publicKey.length !== 32)) return null;
-
   const parentFp = asUint(mapGet(map, 8));
   return {
     path,
     xfp: Number(xfp),
-    publicKey,
+    publicKey: asBytes(mapGet(map, 3)) ?? null,
     chainCode: asBytes(mapGet(map, 4)) ?? null,
     parentFingerprint: parentFp !== undefined && parentFp <= 0xffffffffn ? Number(parentFp) : null,
     name: asText(mapGet(map, 9)) ?? null,
