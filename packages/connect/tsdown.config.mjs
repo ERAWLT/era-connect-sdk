@@ -1,3 +1,6 @@
+// Plain .mjs on purpose: a .ts config needs a TS loader at build time, which
+// Node 20 (still in the support matrix) does not have natively — tsdown then
+// reaches for its optional `unrun` peer and fails. JS needs nothing.
 import { defineConfig } from 'tsdown';
 
 export default defineConfig({
