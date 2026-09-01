@@ -1,7 +1,7 @@
 # 1. Install & set up
 
 ```sh
-npm install @era-wallet/connect
+npm install @hwlt/era-connect
 # or: pnpm add / yarn add / bun add
 ```
 
@@ -39,14 +39,14 @@ Without either, the first `generateSignRequest` throws
 `EraSdkError('no-secure-random')` with these same instructions.
 
 **2. Metro & subpath imports.** On React Native ≥ 0.79 package `exports` are
-resolved natively — `@era-wallet/connect/evm` just works. On older RN
+resolved natively — `@hwlt/era-connect/evm` just works. On older RN
 versions the package ships classic `main`/`react-native` fields plus proxy
 folders, so both the root and subpath imports resolve there too.
 
 ## Construct once
 
 ```ts
-import { EraConnect } from '@era-wallet/connect';
+import { EraConnect } from '@hwlt/era-connect';
 
 export const era = new EraConnect({
   origin: 'MyWallet', // the wallet name the DEVICE shows on every request

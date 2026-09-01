@@ -26,7 +26,7 @@ importers:
 
   examples/expo-demo:
     dependencies:
-      '@era-wallet/connect':
+      '@hwlt/era-connect':
         specifier: workspace:*
         version: link:../../packages/connect
       expo:

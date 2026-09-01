@@ -43,7 +43,7 @@ takes several seconds; budget scan timeouts from
 `DeviceProfile.deviceToPhone`, not from your own send rate:
 
 ```ts
-import { DeviceProfile } from '@era-wallet/connect';
+import { DeviceProfile } from '@hwlt/era-connect';
 DeviceProfile.deviceToPhone; // { fragmentBytesOnWire: 150, frameIntervalMs: 400 }
 ```
 

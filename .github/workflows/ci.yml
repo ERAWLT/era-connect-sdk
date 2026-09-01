@@ -21,9 +21,9 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm exec biome ci .
-      - run: pnpm --filter @era-wallet/connect typecheck
-      - run: pnpm --filter @era-wallet/connect test
-      - run: pnpm --filter @era-wallet/connect build
+      - run: pnpm --filter @hwlt/era-connect typecheck
+      - run: pnpm --filter @hwlt/era-connect test
+      - run: pnpm --filter @hwlt/era-connect build
       # Guard the exports map — a regression here breaks Metro/Node resolution silently.
       - run: pnpm exec publint
         working-directory: packages/connect
@@ -53,6 +53,6 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - run: pnpm --filter @era-wallet/connect test
+      - run: pnpm --filter @hwlt/era-connect test
         env:
           FC_NUM_RUNS: '10000'

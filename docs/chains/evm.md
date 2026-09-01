@@ -6,7 +6,7 @@ path. Wire types: `eth-sign-request` (tag 401) → `eth-signature` (402).
 ## 1. Generate the sign request
 
 ```ts
-import { EvmChain } from '@era-wallet/connect/evm';
+import { EvmChain } from '@hwlt/era-connect/evm';
 
 const request = era.evm.generateSignRequest(props);
 ```
@@ -64,7 +64,7 @@ const sig = scanner.parse();         // or era.evm.parseSignature(ur, { requestI
 
 ```ts
 import { serializeTransaction } from 'viem';
-import { verifyEvmSignature } from '@era-wallet/connect/verify';
+import { verifyEvmSignature } from '@hwlt/era-connect/verify';
 
 const check = verifyEvmSignature({ signData, dataType, signature: sig.signature, address });
 if (!check.ok) throw new Error(check.reason);

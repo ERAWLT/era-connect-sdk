@@ -1,8 +1,8 @@
 // CSPRNG polyfill MUST be the first import (request ids need it).
 import 'react-native-get-random-values';
 
-import type { EraAccounts } from '@era-wallet/connect';
-import { EraConnect } from '@era-wallet/connect';
+import type { EraAccounts } from '@hwlt/era-connect';
+import { EraConnect } from '@hwlt/era-connect';
 import { StatusBar } from 'expo-status-bar';
 import { useMemo, useState } from 'react';
 import { SafeAreaView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';

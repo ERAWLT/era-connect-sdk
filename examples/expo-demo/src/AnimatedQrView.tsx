@@ -1,4 +1,4 @@
-import type { AnimatedUr } from '@era-wallet/connect';
+import type { AnimatedUr } from '@hwlt/era-connect';
 import { useEffect, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import QRCode from 'react-native-qrcode-svg';

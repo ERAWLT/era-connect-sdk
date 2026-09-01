@@ -1,4 +1,4 @@
-import type { EraAccounts, EraConnect } from '@era-wallet/connect';
+import type { EraAccounts, EraConnect } from '@hwlt/era-connect';
 import { useMemo, useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { UrScannerView } from './UrScannerView';

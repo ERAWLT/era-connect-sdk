@@ -1,4 +1,4 @@
-/** Subpath entry: `@era-wallet/connect/tron`. */
+/** Subpath entry: `@hwlt/era-connect/tron`. */
 
 export type { EraConnectConfig, ExpectedReply, SignRequest } from './chains/shared';
 export type { TronLatestBlock, TronSignatureResult, TronSignRequestProps } from './chains/tron';

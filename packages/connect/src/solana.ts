@@ -1,4 +1,4 @@
-/** Subpath entry: `@era-wallet/connect/solana`. */
+/** Subpath entry: `@hwlt/era-connect/solana`. */
 
 export type { EraConnectConfig, ExpectedReply, SignRequest } from './chains/shared';
 export type { SolSignatureResult, SolSignRequestProps } from './chains/solana';

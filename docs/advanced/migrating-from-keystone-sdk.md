@@ -18,7 +18,7 @@ concepts map one-to-one and most prop names are identical.
 What you gain that has no Keystone equivalent:
 
 - **Request-id echo enforcement** in `parse()` (stale-reply replay refused).
-- **`@era-wallet/connect/verify`** — cryptographic proof the device signed
+- **`@hwlt/era-connect/verify`** — cryptographic proof the device signed
   your exact bytes, including the mandatory PSBT binding.
 - **Typed errors** (`EraSdkError.code`) instead of `Error('type not match')`.
 - **One package, subpath exports** — no 18-package constellation; unused

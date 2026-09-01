@@ -10,7 +10,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@era-wallet/connect": "workspace:*",
+    "@hwlt/era-connect": "workspace:*",
     "expo": "~52.0.0",
     "expo-camera": "~16.0.0",
     "expo-status-bar": "~2.0.0",

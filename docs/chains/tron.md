@@ -65,7 +65,7 @@ anti-replay binding, because the device's bytes are broadcast verbatim.
 ## 3. Verify & broadcast
 
 ```ts
-import { verifyTronSignature } from '@era-wallet/connect/verify';
+import { verifyTronSignature } from '@hwlt/era-connect/verify';
 
 const check = verifyTronSignature({
   rawData, from: ownerAddress, latestBlock, signedTx: sig.signedTx,

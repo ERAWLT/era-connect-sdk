@@ -6,7 +6,7 @@ then send the transaction with your own infrastructure (the SDK never
 performs I/O).
 
 ```ts
-import { verifyEvmSignature } from '@era-wallet/connect/verify';
+import { verifyEvmSignature } from '@hwlt/era-connect/verify';
 
 const check = verifyEvmSignature({
   signData: rlpBytes,
@@ -25,7 +25,7 @@ carry no request id, so comparing the returned PSBT against the sent one IS
 the anti-replay binding:
 
 ```ts
-import { verifySignedPsbt } from '@era-wallet/connect/verify';
+import { verifySignedPsbt } from '@hwlt/era-connect/verify';
 const check = verifySignedPsbt({ sentPsbt, signedPsbt: reply.psbt });
 ```
 
