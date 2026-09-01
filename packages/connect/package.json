@@ -1,6 +1,6 @@
 {
   "name": "@hwlt/era-connect",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "ERA hardware wallet SDK: air-gapped UR/QR account linking and transaction signing for EVM, Bitcoin, Solana and Tron",
   "keywords": [
     "era-wallet",
@@ -36,6 +36,7 @@
     "evm",
     "btc",
     "solana",
+    "ton",
     "tron",
     "verify",
     "NOTICE"
@@ -100,6 +101,17 @@
       "require": {
         "types": "./dist/tron.d.cts",
         "default": "./dist/tron.cjs"
+      }
+    },
+    "./ton": {
+      "react-native": "./dist/ton.js",
+      "import": {
+        "types": "./dist/ton.d.ts",
+        "default": "./dist/ton.js"
+      },
+      "require": {
+        "types": "./dist/ton.d.cts",
+        "default": "./dist/ton.cjs"
       }
     },
     "./verify": {

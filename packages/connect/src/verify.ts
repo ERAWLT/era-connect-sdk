@@ -15,5 +15,8 @@ export { PsbtInputType, parsePsbt } from './verify/psbt-reader';
 export type { VerifyResult } from './verify/result';
 export type { VerifySolanaSignatureArgs } from './verify/solana';
 export { verifySolanaSignature } from './verify/solana';
+export type { VerifyTonSignatureArgs } from './verify/ton';
+export { verifyTonSignature } from './verify/ton';
+export { bocRootHash } from './verify/ton-boc';
 export type { VerifyTronSignatureArgs } from './verify/tron';
 export { verifyTronSignature } from './verify/tron';

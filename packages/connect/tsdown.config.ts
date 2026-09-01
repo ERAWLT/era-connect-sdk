@@ -7,6 +7,7 @@ export default defineConfig({
     btc: 'src/btc.ts',
     solana: 'src/solana.ts',
     tron: 'src/tron.ts',
+    ton: 'src/ton.ts',
     verify: 'src/verify.ts',
   },
   format: ['esm', 'cjs'],

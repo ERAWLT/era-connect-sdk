@@ -14,6 +14,7 @@ import { EvmChain } from './chains/evm';
 import type { ChainContext, EraConnectConfig } from './chains/shared';
 import { resolveContext } from './chains/shared';
 import { SolanaChain } from './chains/solana';
+import { TonChain } from './chains/ton';
 import { TronChain } from './chains/tron';
 import type { HardwareCallRequest, KeyDerivationCallProps } from './hardware-call/key-derivation';
 import { generateKeyDerivationCall } from './hardware-call/key-derivation';
@@ -40,6 +41,7 @@ export class EraConnect {
   private _btc: BtcChain | undefined;
   private _solana: SolanaChain | undefined;
   private _tron: TronChain | undefined;
+  private _ton: TonChain | undefined;
   private _raw: RawModule | undefined;
 
   constructor(config?: EraConnectConfig) {
@@ -64,6 +66,11 @@ export class EraConnect {
   get tron(): TronChain {
     this._tron ??= new TronChain(this.context);
     return this._tron;
+  }
+
+  get ton(): TonChain {
+    this._ton ??= new TonChain(this.context);
+    return this._ton;
   }
 
   /** Escape hatch for UR types without a dedicated module. */
@@ -105,6 +112,7 @@ export {
   EraAccounts,
   EvmAccountView,
   SolanaAccountView,
+  TonAccountView,
   TronAccountView,
 } from './accounts/accounts';
 export type {
@@ -125,6 +133,8 @@ export type {
 export { DEFAULT_ORIGIN } from './chains/shared';
 export type { SolSignatureResult, SolSignRequestProps } from './chains/solana';
 export { SolanaChain, SolSignType } from './chains/solana';
+export type { TonSignatureResult, TonSignRequestProps } from './chains/ton';
+export { TonChain, TonDataType } from './chains/ton';
 export type { TronLatestBlock, TronSignatureResult, TronSignRequestProps } from './chains/tron';
 export { TronChain } from './chains/tron';
 // UTF-8 helpers that work on every Hermes version (TextEncoder does not):

@@ -9,6 +9,7 @@ import { HDKey } from '@scure/bip32';
 import { describe, expect, it } from 'vitest';
 import { cborDecode } from '../src/cbor/decode';
 import { asArray, asBool, asBytes, asMap, asUint, mapGet } from '../src/cbor/model';
+import { TonDataType } from '../src/chains/ton';
 import {
   bytesToHex,
   concatBytes,
@@ -21,6 +22,7 @@ import { gunzipCapped } from '../src/tron-proto/gzip';
 import { splitSignedTronTx } from '../src/tron-proto/messages';
 import { UrDecoder } from '../src/ur/decoder';
 import { parsePsbt } from '../src/verify/psbt-reader';
+import { verifyTonSignature } from '../src/verify/ton';
 
 /**
  * LOCAL-ONLY cross-check against a device-firmware signing-fixture corpus:
@@ -185,6 +187,43 @@ describe.skipIf(!enabled)('firmware fixture corpus (local, env-gated)', () => {
       const echoed = parsePsbt(asBytes(cborDecode(reply.cbor))!);
       expect(equalBytes(sent.unsignedTx, echoed.unsignedTx), c.name).toBe(true);
     }
+  });
+
+  it('every TON reply verifies against the seed key over OUR BoC/proof digest', () => {
+    const file = JSON.parse(readFileSync(join(dir!, 'ton_cases.json'), 'utf8')) as {
+      seed: string;
+      sign_cases: (FixtureCase & { status: string })[];
+    };
+    let checked = 0;
+    for (const c of file.sign_cases) {
+      if (c.status !== 'ready') continue;
+      const request = decodeUrText(c.ur);
+      const reply = decodeUrText(c.expected_signature);
+      if (!request || !reply) continue;
+      expect(request.type).toBe('ton-sign-request');
+      expect(reply.type).toBe('ton-signature');
+      const reqMap = cborDecode(request.cbor);
+      const signData = asBytes(mapGet(reqMap, 2))!;
+      const dataType = Number(asUint(mapGet(reqMap, 3)) ?? 1n);
+      const sig = asBytes(mapGet(cborDecode(reply.cbor), 2))!;
+      const pub = ed25519KeyFromSeed(
+        hexToBytes(c.seed ?? file.seed),
+        keypathLevels(mapGet(reqMap, 4)),
+      );
+
+      // Recompute the digest with the SDK's own implementation — this is the
+      // cross-check that our BoC root hash / TON Connect proof digest agree
+      // with what the device actually signed.
+      const result = verifyTonSignature({
+        signData,
+        dataType: dataType === 2 ? TonDataType.tonProof : TonDataType.transaction,
+        signature: sig,
+        publicKey: pub,
+      });
+      expect(result.ok, `${c.name}: ${!result.ok ? result.reason : ''}`).toBe(true);
+      checked += 1;
+    }
+    expect(checked).toBeGreaterThanOrEqual(6);
   });
 
   it('the tron rawData corpus round-trips: layouts, reply frame, txid, caps', () => {
