@@ -50,7 +50,7 @@ sig.signature; // exactly 64 bytes, Ed25519
 ## 3. Verify, assemble & broadcast
 
 ```ts
-import { verifySolanaSignature } from '@era-wallet/connect/verify';
+import { verifySolanaSignature } from '@hwlt/era-connect/verify';
 
 const tx = new VersionedTransaction(message);       // build FIRST — the check
 const check = verifySolanaSignature({               // must see what you send

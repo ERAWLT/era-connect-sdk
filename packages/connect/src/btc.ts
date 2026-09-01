@@ -1,4 +1,4 @@
-/** Subpath entry: `@era-wallet/connect/btc`. */
+/** Subpath entry: `@hwlt/era-connect/btc`. */
 
 export type {
   BtcMessageSignatureResult,

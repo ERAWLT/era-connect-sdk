@@ -72,7 +72,7 @@ export class BtcChain {
    * BECAUSE the protocol carries no request id on this path, the reply is
    * bound to the request only by its content: after parsing, compare the
    * returned PSBT's unsigned transaction against the one you sent
-   * (`verifySignedPsbt` from `@era-wallet/connect/verify`). Skipping that
+   * (`verifySignedPsbt` from `@hwlt/era-connect/verify`). Skipping that
    * check re-opens replay of a stale signed PSBT.
    */
   generatePsbtSignRequest(props: BtcPsbtSignRequestProps): SignRequest<BtcPsbtResult> {

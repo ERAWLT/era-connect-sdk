@@ -1,5 +1,5 @@
 /**
- * Subpath entry: `@era-wallet/connect/verify`.
+ * Subpath entry: `@hwlt/era-connect/verify`.
  *
  * "Did the device sign exactly what I sent?" — run these between parsing a
  * reply and broadcasting it. Kept out of the root entry so the curve

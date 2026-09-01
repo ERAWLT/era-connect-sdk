@@ -1,6 +1,6 @@
 # Verification — "did the device sign exactly what I sent?"
 
-`@era-wallet/connect/verify` (its own subpath, so the curve arithmetic stays
+`@hwlt/era-connect/verify` (its own subpath, so the curve arithmetic stays
 out of bundles that skip it) answers the one question the transport cannot:
 that the signature in hand covers **the bytes you are about to broadcast**,
 made by **the key you expected**.

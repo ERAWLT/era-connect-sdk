@@ -2,7 +2,7 @@
 
 ## Layout
 
-- `packages/connect` — the published SDK (`@era-wallet/connect`).
+- `packages/connect` — the published SDK (`@hwlt/era-connect`).
 - `examples/expo-demo` — offline React Native demo (not published).
 - `docs/` — the integration guide; `docs/protocol/` is the normative wire
   spec (synced manually from the protocol source of truth — do not edit the
@@ -15,9 +15,9 @@
 
 ```sh
 pnpm install
-pnpm --filter @era-wallet/connect test        # vitest
-pnpm --filter @era-wallet/connect typecheck
-pnpm build && pnpm --filter @era-wallet/connect exec publint
+pnpm --filter @hwlt/era-connect test        # vitest
+pnpm --filter @hwlt/era-connect typecheck
+pnpm build && pnpm --filter @hwlt/era-connect exec publint
 pnpm lint                                     # biome
 ```
 

@@ -23,7 +23,7 @@ jobs:
           cache: pnpm
           registry-url: https://registry.npmjs.org
       - run: pnpm install --frozen-lockfile
-      - run: pnpm --filter @era-wallet/connect build
+      - run: pnpm --filter @hwlt/era-connect build
       - name: Create release PR or publish
         uses: changesets/action@v1
         with:
@@ -34,4 +34,4 @@ jobs:
           # No NPM_TOKEN: publishing uses npm trusted publishing (OIDC).
           # One-time setup: after the first (manual) publish of 0.1.0, register
           # this repository + workflow as a Trusted Publisher on npmjs.com for
-          # @era-wallet/connect, then revoke the bootstrap token.
+          # @hwlt/era-connect, then revoke the bootstrap token.

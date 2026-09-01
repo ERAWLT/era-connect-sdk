@@ -34,7 +34,7 @@ const request = era.btc.generatePsbtSignRequest({ psbt: psbt.toBuffer() });
 The reply is the **signed, NOT finalized** PSBT:
 
 ```ts
-import { verifySignedPsbt } from '@era-wallet/connect/verify';
+import { verifySignedPsbt } from '@hwlt/era-connect/verify';
 
 const scanner = request.scanner();   // create ONCE, feed it the camera frames
 const { psbt: signed } = scanner.parse();

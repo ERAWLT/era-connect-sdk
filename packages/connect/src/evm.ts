@@ -1,4 +1,4 @@
-/** Subpath entry: `@era-wallet/connect/evm`. */
+/** Subpath entry: `@hwlt/era-connect/evm`. */
 
 export type { EvmSignatureResult, EvmSignRequestProps } from './chains/evm';
 export { EvmChain, EvmDataType, foldRecoveryId } from './chains/evm';

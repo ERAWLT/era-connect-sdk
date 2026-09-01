@@ -1,4 +1,4 @@
-# @era-wallet/connect
+# @hwlt/era-connect
 
 Air-gapped **ERA hardware wallet** integration for software wallets: account
 linking and transaction signing over animated QR codes (BC-UR / Keystone-compatible
@@ -20,7 +20,7 @@ registry), for **EVM, Bitcoin, Solana and Tron**.
 ## Install
 
 ```sh
-npm install @era-wallet/connect
+npm install @hwlt/era-connect
 ```
 
 React Native needs a CSPRNG for request ids — install
@@ -30,7 +30,7 @@ and import it once at app start (or inject your own via `randomBytes`).
 ## 60 seconds to a signature
 
 ```ts
-import { EraConnect, EvmChain } from '@era-wallet/connect';
+import { EraConnect, EvmChain } from '@hwlt/era-connect';
 
 const era = new EraConnect({ origin: 'MyWallet' }); // shown on the device
 
@@ -59,7 +59,7 @@ const reply = request.scanner();            // pre-pinned to the right reply typ
 const signature = reply.parse();            // typed; request-id echo enforced
 
 // 3. VERIFY (recommended) + broadcast with your own stack.
-import { verifyEvmSignature } from '@era-wallet/connect/verify';
+import { verifyEvmSignature } from '@hwlt/era-connect/verify';
 verifyEvmSignature({ signData: rlpBytes, dataType: 1,
   signature: signature.signature, address: evm.deriveAddress(0) });
 ```
@@ -68,10 +68,10 @@ verifyEvmSignature({ signData: rlpBytes, dataType: 1,
 
 | Chain | Sign transaction | Sign message | Subpath |
 |---|---|---|---|
-| EVM (all chains) | `eth-sign-request` | personal_sign / EIP-712 | `@era-wallet/connect/evm` |
-| Bitcoin | `crypto-psbt` (PSBT v0) | legacy P2PKH only | `@era-wallet/connect/btc` |
-| Solana | `sol-sign-request` | off-chain messages | `@era-wallet/connect/solana` |
-| Tron | `keystone-sign-request` (any contract via `rawData`) | UTF-8 in `rawData` | `@era-wallet/connect/tron` |
+| EVM (all chains) | `eth-sign-request` | personal_sign / EIP-712 | `@hwlt/era-connect/evm` |
+| Bitcoin | `crypto-psbt` (PSBT v0) | legacy P2PKH only | `@hwlt/era-connect/btc` |
+| Solana | `sol-sign-request` | off-chain messages | `@hwlt/era-connect/solana` |
+| Tron | `keystone-sign-request` (any contract via `rawData`) | UTF-8 in `rawData` | `@hwlt/era-connect/tron` |
 
 Subpath imports keep unrelated chains (and the `verify` crypto) out of your
 bundle. The device's chain list keeps growing — `era.raw` is the escape hatch

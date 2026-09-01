@@ -9,7 +9,7 @@ boundary, not your UI.
 ## Build the request
 
 ```ts
-import { EvmChain } from '@era-wallet/connect/evm';
+import { EvmChain } from '@hwlt/era-connect/evm';
 
 const request = era.evm.generateSignRequest({
   signData: rlpBytes,                      // exact bytes to sign (see chain guides)

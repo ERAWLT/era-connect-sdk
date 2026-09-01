@@ -4,14 +4,14 @@ Air-gapped **ERA hardware wallet** integration for software wallets over
 animated QR codes (BC-UR / Keystone-compatible registry) — account linking
 and transaction signing for **EVM, Bitcoin, Solana and Tron**.
 
-- **npm package:** [`@era-wallet/connect`](packages/connect) — headless,
+- **npm package:** [`@hwlt/era-connect`](packages/connect) — headless,
   TypeScript, React-Native-first, zero I/O.
 - **Documentation:** [`docs/`](docs) — a 15-minute getting-started funnel,
   per-chain guides, device specifics and the normative wire spec.
 - **Demo app:** [`examples/expo-demo`](examples) — link + sign, fully offline.
 
 ```ts
-import { EraConnect } from '@era-wallet/connect';
+import { EraConnect } from '@hwlt/era-connect';
 
 const era = new EraConnect({ origin: 'MyWallet' });
 const accounts = era.parseAccounts(scannedUr);      // link once

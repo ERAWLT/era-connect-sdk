@@ -1,8 +1,8 @@
-import type { EraAccounts, EraConnect, SignRequest } from '@era-wallet/connect';
-import { utf8Encode } from '@era-wallet/connect';
-import type { EvmSignatureResult } from '@era-wallet/connect/evm';
-import { EvmChain } from '@era-wallet/connect/evm';
-import { verifyEvmSignature } from '@era-wallet/connect/verify';
+import type { EraAccounts, EraConnect, SignRequest } from '@hwlt/era-connect';
+import { utf8Encode } from '@hwlt/era-connect';
+import type { EvmSignatureResult } from '@hwlt/era-connect/evm';
+import { EvmChain } from '@hwlt/era-connect/evm';
+import { verifyEvmSignature } from '@hwlt/era-connect/verify';
 import { useMemo, useState } from 'react';
 import { Button, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { AnimatedQrView } from './AnimatedQrView';

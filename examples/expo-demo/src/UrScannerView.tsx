@@ -1,4 +1,4 @@
-import type { Ur, UrScanner } from '@era-wallet/connect';
+import type { Ur, UrScanner } from '@hwlt/era-connect';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { useRef, useState } from 'react';
 import { Button, StyleSheet, Text, View } from 'react-native';
