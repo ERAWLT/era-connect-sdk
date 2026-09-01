@@ -1,0 +1,296 @@
+import { EraSdkError } from '../core/errors';
+import type { PathLevel } from '../registry/keypath';
+import { formatPath, parsePath, pathEquals, xfpToHex } from '../registry/keypath';
+import type { RawAccountEntry, RawMultiAccounts } from '../registry/multi-accounts';
+import { parseMultiAccountsUr } from '../registry/multi-accounts';
+import type { Ur } from '../ur/ur';
+import {
+  btcP2wpkhAddressFromPublicKey,
+  derivePublicKey,
+  evmAddressFromPublicKey,
+  serializeExtendedPublicKey,
+  solanaAddressFromPublicKey,
+  tronAddressFromPublicKey,
+  ZPUB_VERSION,
+} from './derive';
+
+/** Chain family of an exported account, matched by its derivation path — never by the note label. */
+export type AccountChain = 'evm' | 'btc' | 'solana' | 'tron' | 'unknown';
+
+export interface AccountKey {
+  readonly chain: AccountChain;
+  /** Account-level derivation path, e.g. `m/44'/60'/0'`. */
+  readonly path: string;
+  /**
+   * The source fingerprint a `*-sign-request` keypath must carry for this
+   * account (lowercase 8-hex). NOT necessarily the master fingerprint.
+   */
+  readonly xfp: string;
+  /** 33-byte compressed secp256k1, or 32-byte Ed25519 (Solana). */
+  readonly publicKey: Uint8Array;
+  readonly chainCode: Uint8Array | undefined;
+  readonly name: string | undefined;
+  /** Derivation-scheme label (`account.standard`, ...) — display only. */
+  readonly note: string | undefined;
+}
+
+export interface DeviceInfo {
+  readonly name: string | undefined;
+  readonly id: string | undefined;
+  readonly firmwareVersion: string | undefined;
+}
+
+function classify(path: readonly PathLevel[]): AccountChain {
+  const p0 = path[0];
+  const p1 = path[1];
+  if (!p0 || !p1 || !p0.hardened || !p1.hardened) return 'unknown';
+  if (p0.index === 44 && p1.index === 60) return 'evm';
+  if (p1.index === 0 && (p0.index === 84 || p0.index === 49 || p0.index === 44 || p0.index === 86)) {
+    return 'btc';
+  }
+  if (p0.index === 44 && p1.index === 501) return 'solana';
+  if (p0.index === 44 && p1.index === 195) return 'tron';
+  return 'unknown';
+}
+
+function withChainCode(entry: RawAccountEntry): Uint8Array {
+  if (!entry.chainCode) {
+    throw new EraSdkError(
+      'account-not-found',
+      `account ${formatPath([...entry.path])} carries no chain code; cannot derive children`,
+    );
+  }
+  return entry.chainCode;
+}
+
+/** EVM view over the linked wallet: one account xpub, addresses derived at `0/index`. */
+export class EvmAccountView {
+  constructor(private readonly entry: RawAccountEntry) {}
+
+  get xfp(): string {
+    return xfpToHex(this.entry.xfp);
+  }
+
+  get accountPath(): string {
+    return formatPath([...this.entry.path]);
+  }
+
+  /** Signing path for address `index`: `<account>/0/<index>`. */
+  pathFor(index: number): string {
+    return `${this.accountPath}/0/${index}`;
+  }
+
+  deriveAddress(index: number): `0x${string}` {
+    return evmAddressFromPublicKey(
+      derivePublicKey(this.entry.publicKey, withChainCode(this.entry), 0, index),
+    );
+  }
+
+  xpub(): string {
+    return extendedKeyOf(this.entry);
+  }
+}
+
+/** Bitcoin view (the BIP-84 native-segwit account). */
+export class BtcAccountView {
+  constructor(
+    private readonly entry: RawAccountEntry,
+    private readonly testnet: boolean,
+  ) {}
+
+  get xfp(): string {
+    return xfpToHex(this.entry.xfp);
+  }
+
+  get accountPath(): string {
+    return formatPath([...this.entry.path]);
+  }
+
+  receivePath(index: number): string {
+    return `${this.accountPath}/0/${index}`;
+  }
+
+  changePath(index: number): string {
+    return `${this.accountPath}/1/${index}`;
+  }
+
+  deriveAddress(index: number, options?: { change?: boolean }): string {
+    const change = options?.change ? 1 : 0;
+    return btcP2wpkhAddressFromPublicKey(
+      derivePublicKey(this.entry.publicKey, withChainCode(this.entry), change, index),
+      this.testnet ? 'tb' : 'bc',
+    );
+  }
+
+  xpub(): string {
+    return extendedKeyOf(this.entry);
+  }
+
+  /** SLIP-132 zpub form of the same key, for tools that require it. */
+  zpub(): string {
+    return extendedKeyOf(this.entry, ZPUB_VERSION);
+  }
+}
+
+/** Tron view: addresses derived at `0/index`. */
+export class TronAccountView {
+  constructor(private readonly entry: RawAccountEntry) {}
+
+  get xfp(): string {
+    return xfpToHex(this.entry.xfp);
+  }
+
+  get accountPath(): string {
+    return formatPath([...this.entry.path]);
+  }
+
+  pathFor(index: number): string {
+    return `${this.accountPath}/0/${index}`;
+  }
+
+  deriveAddress(index: number): string {
+    return tronAddressFromPublicKey(
+      derivePublicKey(this.entry.publicKey, withChainCode(this.entry), 0, index),
+    );
+  }
+}
+
+/**
+ * Solana view: Ed25519 has no public child derivation, so the device
+ * pre-derives hardened accounts (`m/44'/501'/idx'`) and each entry IS a
+ * signer. The public key, base58, IS the address.
+ */
+export class SolanaAccountView {
+  constructor(private readonly entry: RawAccountEntry) {}
+
+  get xfp(): string {
+    return xfpToHex(this.entry.xfp);
+  }
+
+  get path(): string {
+    return formatPath([...this.entry.path]);
+  }
+
+  /** The hardened account index (third path level). */
+  get index(): number {
+    return this.entry.path[2]?.index ?? 0;
+  }
+
+  get publicKey(): Uint8Array {
+    return this.entry.publicKey;
+  }
+
+  get address(): string {
+    return solanaAddressFromPublicKey(this.entry.publicKey);
+  }
+}
+
+function extendedKeyOf(entry: RawAccountEntry, version?: number): string {
+  const chainCode = withChainCode(entry);
+  if (entry.publicKey.length !== 33) {
+    throw new EraSdkError('invalid-props', 'extended keys exist only for secp256k1 accounts');
+  }
+  const last = entry.path[entry.path.length - 1]!;
+  const args = {
+    depth: entry.path.length,
+    parentFingerprint: entry.parentFingerprint ?? 0,
+    childNumber: last.hardened ? last.index + 0x80000000 : last.index,
+    chainCode,
+    publicKey: entry.publicKey,
+  };
+  return version === undefined
+    ? serializeExtendedPublicKey(args)
+    : serializeExtendedPublicKey({ ...args, version });
+}
+
+/**
+ * The linked wallet: everything a software wallet extracts from the device's
+ * `crypto-multi-accounts` QR. Parse once, store the source UR string, derive
+ * addresses locally — the device is not needed again until signing.
+ */
+export class EraAccounts {
+  private constructor(
+    private readonly raw: RawMultiAccounts,
+    readonly sourceUr: string | undefined,
+  ) {}
+
+  static fromUr(input: Ur | string): EraAccounts {
+    const raw = parseMultiAccountsUr(input);
+    return new EraAccounts(raw, typeof input === 'string' ? input : input.toString());
+  }
+
+  /** Master fingerprint, lowercase 8-hex. */
+  get masterFingerprint(): string {
+    return xfpToHex(this.raw.masterFingerprint);
+  }
+
+  get device(): DeviceInfo {
+    return {
+      name: this.raw.deviceName ?? undefined,
+      id: this.raw.deviceId ?? undefined,
+      firmwareVersion: this.raw.deviceVersion ?? undefined,
+    };
+  }
+
+  get keys(): AccountKey[] {
+    return this.raw.entries.map((entry) => ({
+      chain: classify(entry.path),
+      path: formatPath([...entry.path]),
+      xfp: xfpToHex(entry.xfp),
+      publicKey: entry.publicKey,
+      chainCode: entry.chainCode ?? undefined,
+      name: entry.name ?? undefined,
+      note: entry.note ?? undefined,
+    }));
+  }
+
+  /**
+   * The xfp a sign request must carry for the account whose path exactly
+   * equals `accountPath`. Throws `account-not-found` — never a silent zero.
+   */
+  xfpFor(accountPath: string): string {
+    return xfpToHex(this.entryFor(accountPath).xfp);
+  }
+
+  /** The EVM account (standard `m/44'/60'/...` scheme), if the export carries one. */
+  evm(): EvmAccountView | undefined {
+    const entry =
+      this.raw.entries.find(
+        (e) => classify(e.path) === 'evm' && (e.note === null || e.note === 'account.standard'),
+      ) ?? this.raw.entries.find((e) => classify(e.path) === 'evm');
+    return entry ? new EvmAccountView(entry) : undefined;
+  }
+
+  /** The Bitcoin BIP-84 native-segwit account, if the export carries one. */
+  btc(options?: { testnet?: boolean }): BtcAccountView | undefined {
+    const entry = this.raw.entries.find(
+      (e) => classify(e.path) === 'btc' && e.path[0]?.index === 84,
+    );
+    return entry ? new BtcAccountView(entry, options?.testnet ?? false) : undefined;
+  }
+
+  tron(): TronAccountView | undefined {
+    const entry = this.raw.entries.find((e) => classify(e.path) === 'tron');
+    return entry ? new TronAccountView(entry) : undefined;
+  }
+
+  /** All pre-derived Solana signers (usually `m/44'/501'/0'..9'`). */
+  solana(): SolanaAccountView[] {
+    return this.raw.entries
+      .filter((e) => classify(e.path) === 'solana')
+      .map((e) => new SolanaAccountView(e));
+  }
+
+  private entryFor(accountPath: string): RawAccountEntry {
+    const levels = parsePath(accountPath);
+    const entry = this.raw.entries.find((e) => pathEquals(e.path, levels));
+    if (!entry) {
+      throw new EraSdkError(
+        'account-not-found',
+        `the linked wallet carries no account at ${accountPath}`,
+        { path: accountPath },
+      );
+    }
+    return entry;
+  }
+}

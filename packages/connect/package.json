@@ -30,7 +30,10 @@
   "types": "./dist/index.d.ts",
   "react-native": "./dist/index.js",
   "sideEffects": false,
-  "files": ["dist", "proto"],
+  "files": [
+    "dist",
+    "proto"
+  ],
   "engines": {
     "node": ">=18"
   },
@@ -91,6 +94,7 @@
   },
   "devDependencies": {
     "@ngraveio/bc-ur": "1.1.13",
+    "@types/node": "^26.4.0",
     "cbor2": "^1.7.0",
     "fast-check": "^3.23.2",
     "tsdown": "^0.12.9",
