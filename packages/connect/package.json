@@ -1,7 +1,7 @@
 {
   "name": "@hwlt/era-connect",
   "version": "0.5.0",
-  "description": "ERA hardware wallet SDK: air-gapped UR/QR account linking and transaction signing for EVM, Bitcoin, Solana and Tron",
+  "description": "ERA hardware wallet SDK: air-gapped UR/QR account linking and transaction signing for EVM, Bitcoin (+ LTC/DOGE/DASH/BCH), Solana, Tron, TON, Cardano, Sui, Cosmos and XRP",
   "keywords": [
     "era-wallet",
     "hardware-wallet",
@@ -14,7 +14,15 @@
     "bitcoin",
     "ethereum",
     "solana",
-    "tron"
+    "tron",
+    "ton",
+    "cardano",
+    "sui",
+    "cosmos",
+    "xrp",
+    "bitcoin-cash",
+    "litecoin",
+    "dogecoin"
   ],
   "license": "Apache-2.0",
   "repository": {

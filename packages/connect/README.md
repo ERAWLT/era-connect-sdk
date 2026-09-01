@@ -2,7 +2,9 @@
 
 Air-gapped **ERA hardware wallet** integration for software wallets: account
 linking and transaction signing over animated QR codes (BC-UR / Keystone-compatible
-registry), for **EVM, Bitcoin, Solana and Tron**.
+registry), for **every chain the device ships** — EVM (all networks), Bitcoin
+(+ Litecoin, Dogecoin, Dash, Bitcoin Cash), Solana, Tron, TON, Cardano, Sui,
+Cosmos (~35 zones) and XRP.
 
 - **Headless.** You render the QR and own the camera; the SDK owns every byte
   of the protocol. Works in React Native, Expo, browsers, extensions and Node.
