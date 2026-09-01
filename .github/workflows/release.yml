@@ -29,10 +29,10 @@ jobs:
       - name: Create release PR or publish
         uses: changesets/action@v1
         with:
-          # changeset publish creates the git tag; --follow-tags is what
-          # actually pushes it (the action does not push tags for custom
-          # publish commands — v0.3.0 shipped tagless before this line).
-          publish: pnpm changeset publish && git push --follow-tags
+          # The action does NOT shell-interpret this command (everything after
+          # the binary is passed as argv — `&&` included), so the compound
+          # publish-then-push-tags lives in a package.json script.
+          publish: pnpm ci:publish
           title: 'Version packages'
         env:
           # A fine-grained PAT (contents + pull-requests: write): the org
