@@ -207,3 +207,16 @@ describe('attacker-sized UR types are truncated in errors (review)', () => {
     }
   });
 });
+
+describe('gzip reserved FLG bits (cross-SDK contract)', () => {
+  it('refuses a stream with any reserved header flag bit set', async () => {
+    const { gzipCompress, gunzipCapped } = await import('../src/tron-proto/gzip');
+    const good = gzipCompress(new Uint8Array(64).fill(7));
+    expect(gunzipCapped(good, 1024)).toHaveLength(64);
+    for (const bit of [0x20, 0x40, 0x80]) {
+      const bad = Uint8Array.from(good);
+      bad[3]! |= bit;
+      expect(() => gunzipCapped(bad, 1024)).toThrow(/reserved header flag bits/);
+    }
+  });
+});
