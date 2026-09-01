@@ -37,7 +37,8 @@
     "btc",
     "solana",
     "tron",
-    "verify"
+    "verify",
+    "NOTICE"
   ],
   "engines": {
     "node": ">=18"
