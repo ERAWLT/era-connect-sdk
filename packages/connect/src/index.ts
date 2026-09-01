@@ -10,6 +10,7 @@
 import type { EraAccounts as EraAccountsType } from './accounts/accounts';
 import { EraAccounts } from './accounts/accounts';
 import { BtcChain } from './chains/btc';
+import { CardanoChain } from './chains/cardano';
 import { EvmChain } from './chains/evm';
 import type { ChainContext, EraConnectConfig } from './chains/shared';
 import { resolveContext } from './chains/shared';
@@ -42,6 +43,7 @@ export class EraConnect {
   private _solana: SolanaChain | undefined;
   private _tron: TronChain | undefined;
   private _ton: TonChain | undefined;
+  private _cardano: CardanoChain | undefined;
   private _raw: RawModule | undefined;
 
   constructor(config?: EraConnectConfig) {
@@ -71,6 +73,11 @@ export class EraConnect {
   get ton(): TonChain {
     this._ton ??= new TonChain(this.context);
     return this._ton;
+  }
+
+  get cardano(): CardanoChain {
+    this._cardano ??= new CardanoChain(this.context);
+    return this._cardano;
   }
 
   /** Escape hatch for UR types without a dedicated module. */
@@ -109,6 +116,7 @@ export class EraConnect {
 export type { AccountChain, AccountKey, BtcPurpose, DeviceInfo } from './accounts/accounts';
 export {
   BtcAccountView,
+  CardanoAccountView,
   EraAccounts,
   EvmAccountView,
   SolanaAccountView,
@@ -122,6 +130,14 @@ export type {
   BtcPsbtSignRequestProps,
 } from './chains/btc';
 export { BtcChain } from './chains/btc';
+export type {
+  CardanoCertKeyRef,
+  CardanoSignatureResult,
+  CardanoSignRequestProps,
+  CardanoUtxoRef,
+  CardanoWitness,
+} from './chains/cardano';
+export { CardanoChain, parseWitnessSet } from './chains/cardano';
 export type { EvmSignatureResult, EvmSignRequestProps } from './chains/evm';
 export { EvmChain, EvmDataType } from './chains/evm';
 export type {

@@ -36,6 +36,7 @@
     "evm",
     "btc",
     "solana",
+    "cardano",
     "ton",
     "tron",
     "verify",
@@ -112,6 +113,17 @@
       "require": {
         "types": "./dist/ton.d.cts",
         "default": "./dist/ton.cjs"
+      }
+    },
+    "./cardano": {
+      "react-native": "./dist/cardano.js",
+      "import": {
+        "types": "./dist/cardano.d.ts",
+        "default": "./dist/cardano.js"
+      },
+      "require": {
+        "types": "./dist/cardano.d.cts",
+        "default": "./dist/cardano.cjs"
       }
     },
     "./verify": {

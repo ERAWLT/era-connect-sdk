@@ -21,6 +21,7 @@ import {
 import { gunzipCapped } from '../src/tron-proto/gzip';
 import { splitSignedTronTx } from '../src/tron-proto/messages';
 import { UrDecoder } from '../src/ur/decoder';
+import { verifyCardanoSignature } from '../src/verify/cardano';
 import { parsePsbt } from '../src/verify/psbt-reader';
 import { verifyTonSignature } from '../src/verify/ton';
 
@@ -224,6 +225,66 @@ describe.skipIf(!enabled)('firmware fixture corpus (local, env-gated)', () => {
       checked += 1;
     }
     expect(checked).toBeGreaterThanOrEqual(6);
+  });
+
+  it('every synthetic cardano reply verifies with FULL binding from its entropy', async () => {
+    const { icarusMasterFromEntropy, derivePath, publicKeyOf } = await import('./helpers/icarus');
+    const cases = (
+      JSON.parse(readFileSync(join(dir!, 'cardano.json'), 'utf8')) as {
+        cases: (FixtureCase & { entropy?: string })[];
+      }
+    ).cases;
+    let checked = 0;
+    for (const c of cases) {
+      if (!c.entropy || !/ur:/i.test(c.expected_signature)) continue; // real-wallet captures carry no reply
+      const request = decodeUrText(c.ur);
+      const reply = decodeUrText(c.expected_signature);
+      if (!request || !reply) continue;
+      expect(request.type).toBe('cardano-sign-request');
+      const reqMap = cborDecode(request.cbor);
+      const signData = asBytes(mapGet(reqMap, 2))!;
+
+      // Collect signer paths from utxos (key 3) + certKeys (key 4).
+      const paths: string[] = [];
+      for (const key of [3, 4] as const) {
+        const listValue = mapGet(reqMap, key);
+        const list = listValue === undefined ? undefined : asArray(listValue);
+        if (!list) continue;
+        for (const item of list) {
+          const entry = asMap(item);
+          const kp = entry ? asMap(mapGet(entry, key === 3 ? 4 : 2)) : undefined;
+          const comps = kp ? asArray(mapGet(kp, 1)) : undefined;
+          if (!comps) continue;
+          const levels: string[] = [];
+          for (let i = 0; i < comps.length; i += 2) {
+            levels.push(`${Number(asUint(comps[i]))}${asBool(comps[i + 1]) ? "'" : ''}`);
+          }
+          paths.push(`m/${levels.join('/')}`);
+        }
+      }
+      expect(paths.length).toBeGreaterThan(0);
+
+      const master = icarusMasterFromEntropy(hexToBytes(c.entropy));
+      const account = derivePath(master, [
+        { index: 1852, hardened: true },
+        { index: 1815, hardened: true },
+        { index: 0, hardened: true },
+      ]);
+      const witnessSet = asBytes(mapGet(cborDecode(reply.cbor), 2))!;
+      const result = verifyCardanoSignature({
+        signData,
+        witnessSet,
+        account: {
+          publicKey: publicKeyOf(account.kL),
+          chainCode: account.chainCode,
+          accountPath: "m/1852'/1815'/0'",
+        },
+        signerPaths: paths,
+      });
+      expect(result.ok, `${c.name}: ${!result.ok ? result.reason : ''}`).toBe(true);
+      checked += 1;
+    }
+    expect(checked).toBeGreaterThanOrEqual(4);
   });
 
   it('the tron rawData corpus round-trips: layouts, reply frame, txid, caps', () => {

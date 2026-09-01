@@ -15,7 +15,12 @@ import { parsePathComponents } from './keypath';
  */
 export interface RawAccountEntry {
   readonly path: readonly PathLevel[];
-  readonly xfp: number;
+  /**
+   * The origin's source fingerprint, when the export carries one. Cardano
+   * entries deliberately ship a path-only origin — resolve against the
+   * wrapper's master fingerprint in that case.
+   */
+  readonly xfp: number | null;
   /**
    * Nullable and length-unconstrained, as in the reference implementation: an
    * entry without a usable key still resolves its xfp for signing — only the
@@ -105,7 +110,7 @@ export function parseMultiAccountsUr(input: Ur | string): RawMultiAccounts {
       );
     }
     return {
-      masterFingerprint: entry.xfp,
+      masterFingerprint: entry.xfp ?? 0,
       deviceName: null,
       deviceId: null,
       deviceVersion: null,
@@ -150,13 +155,14 @@ function tryParseEntry(item: CborValue): RawAccountEntry | null {
   if (!origin) return null;
 
   const path = parsePathComponents(mapGet(origin, 1));
-  const xfp = asUint(mapGet(origin, 2));
-  if (!path || path.length === 0 || xfp === undefined || xfp > 0xffffffffn) return null;
+  if (!path || path.length === 0) return null;
+  const xfpValue = asUint(mapGet(origin, 2));
+  const xfp = xfpValue !== undefined && xfpValue <= 0xffffffffn ? Number(xfpValue) : null;
 
   const parentFp = asUint(mapGet(map, 8));
   return {
     path,
-    xfp: Number(xfp),
+    xfp,
     publicKey: asBytes(mapGet(map, 3)) ?? null,
     chainCode: asBytes(mapGet(map, 4)) ?? null,
     parentFingerprint: parentFp !== undefined && parentFp <= 0xffffffffn ? Number(parentFp) : null,

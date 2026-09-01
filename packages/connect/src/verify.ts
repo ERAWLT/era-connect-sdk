@@ -8,6 +8,8 @@
 
 export type { VerifyBtcMessageHeaderArgs, VerifySignedPsbtArgs } from './verify/btc';
 export { verifyBtcMessageHeader, verifySignedPsbt } from './verify/btc';
+export type { VerifyCardanoSignatureArgs } from './verify/cardano';
+export { verifyCardanoSignature } from './verify/cardano';
 export type { VerifyEvmSignatureArgs } from './verify/evm';
 export { verifyEvmSignature } from './verify/evm';
 export type { ParsedPsbt, PsbtKeyValue } from './verify/psbt-reader';
