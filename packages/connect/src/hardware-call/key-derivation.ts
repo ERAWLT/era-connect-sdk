@@ -1,9 +1,10 @@
+import type { EraAccounts } from '../accounts/accounts';
+import { EraAccounts as EraAccountsClass } from '../accounts/accounts';
 import { cborEncode } from '../cbor/encode';
 import type { CborValue } from '../cbor/model';
 import { cbArray, cbMap, cbTag, cbText, cbUint } from '../cbor/model';
+import type { ChainContext } from '../chains/shared';
 import { EraSdkError } from '../core/errors';
-import type { EraAccounts } from '../accounts/accounts';
-import { EraAccounts as EraAccountsClass } from '../accounts/accounts';
 import type { AnimatedUrOptions } from '../qr/animated-ur';
 import { AnimatedUr } from '../qr/animated-ur';
 import { keypath304, parsePath } from '../registry/keypath';
@@ -11,7 +12,6 @@ import { WALLET_UR_TYPES } from '../registry/multi-accounts';
 import { TypedUrScanner } from '../scan/ur-scanner';
 import type { Ur } from '../ur/ur';
 import { Ur as UrValue } from '../ur/ur';
-import type { ChainContext } from '../chains/shared';
 
 export type DerivationCurve = 'secp256k1' | 'ed25519';
 export type DerivationAlgorithm = 'slip10' | 'bip32ed25519';

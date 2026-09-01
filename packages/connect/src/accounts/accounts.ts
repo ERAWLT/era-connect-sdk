@@ -45,7 +45,10 @@ function classify(path: readonly PathLevel[]): AccountChain {
   const p1 = path[1];
   if (!p0 || !p1 || !p0.hardened || !p1.hardened) return 'unknown';
   if (p0.index === 44 && p1.index === 60) return 'evm';
-  if (p1.index === 0 && (p0.index === 84 || p0.index === 49 || p0.index === 44 || p0.index === 86)) {
+  if (
+    p1.index === 0 &&
+    (p0.index === 84 || p0.index === 49 || p0.index === 44 || p0.index === 86)
+  ) {
     return 'btc';
   }
   if (p0.index === 44 && p1.index === 501) return 'solana';

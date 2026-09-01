@@ -15,10 +15,7 @@ import type { ChainContext, EraConnectConfig } from './chains/shared';
 import { resolveContext } from './chains/shared';
 import { SolanaChain } from './chains/solana';
 import { TronChain } from './chains/tron';
-import type {
-  HardwareCallRequest,
-  KeyDerivationCallProps,
-} from './hardware-call/key-derivation';
+import type { HardwareCallRequest, KeyDerivationCallProps } from './hardware-call/key-derivation';
 import { generateKeyDerivationCall } from './hardware-call/key-derivation';
 import { RawModule } from './raw';
 import type { UrScannerOptions } from './scan/ur-scanner';
@@ -102,15 +99,23 @@ export class EraConnect {
 // Public types & modules
 // ---------------------------------------------------------------------------
 
-export { EraSdkError } from './core/errors';
-export type { EraErrorCode } from './core/errors';
-export type { RandomBytesFn } from './core/rand';
-export { Ur } from './ur/ur';
-export { UrLimits } from './ur/limits';
-export { AnimatedUr, DEFAULT_FRAGMENT_LENGTH } from './qr/animated-ur';
-export type { AnimatedUrOptions } from './qr/animated-ur';
-export { UrScanner, TypedUrScanner } from './scan/ur-scanner';
-export type { ScanFeedResult, ScanRejection, UrScannerOptions } from './scan/ur-scanner';
+export type { AccountChain, AccountKey, DeviceInfo } from './accounts/accounts';
+export {
+  BtcAccountView,
+  EraAccounts,
+  EvmAccountView,
+  SolanaAccountView,
+  TronAccountView,
+} from './accounts/accounts';
+export type {
+  BtcMessageSignatureResult,
+  BtcMessageSignRequestProps,
+  BtcPsbtResult,
+  BtcPsbtSignRequestProps,
+} from './chains/btc';
+export { BtcChain } from './chains/btc';
+export type { EvmSignatureResult, EvmSignRequestProps } from './chains/evm';
+export { EvmChain, EvmDataType } from './chains/evm';
 export type {
   ChainContext,
   EraConnectConfig,
@@ -118,15 +123,13 @@ export type {
   SignRequest,
 } from './chains/shared';
 export { DEFAULT_ORIGIN } from './chains/shared';
-export {
-  EraAccounts,
-  EvmAccountView,
-  BtcAccountView,
-  TronAccountView,
-  SolanaAccountView,
-} from './accounts/accounts';
-export type { AccountChain, AccountKey, DeviceInfo } from './accounts/accounts';
-export { RawModule } from './raw';
+export type { SolSignatureResult, SolSignRequestProps } from './chains/solana';
+export { SolanaChain, SolSignType } from './chains/solana';
+export type { TronLatestBlock, TronSignatureResult, TronSignRequestProps } from './chains/tron';
+export { TronChain } from './chains/tron';
+export type { EraErrorCode } from './core/errors';
+export { EraSdkError } from './core/errors';
+export type { RandomBytesFn } from './core/rand';
 export type {
   DerivationAlgorithm,
   DerivationCurve,
@@ -134,17 +137,10 @@ export type {
   KeyDerivationCallProps,
   KeyDerivationSchema,
 } from './hardware-call/key-derivation';
-
-export { EvmChain, EvmDataType } from './chains/evm';
-export type { EvmSignRequestProps, EvmSignatureResult } from './chains/evm';
-export { BtcChain } from './chains/btc';
-export type {
-  BtcMessageSignRequestProps,
-  BtcMessageSignatureResult,
-  BtcPsbtResult,
-  BtcPsbtSignRequestProps,
-} from './chains/btc';
-export { SolanaChain, SolSignType } from './chains/solana';
-export type { SolSignRequestProps, SolSignatureResult } from './chains/solana';
-export { TronChain } from './chains/tron';
-export type { TronLatestBlock, TronSignRequestProps, TronSignatureResult } from './chains/tron';
+export type { AnimatedUrOptions } from './qr/animated-ur';
+export { AnimatedUr, DEFAULT_FRAGMENT_LENGTH } from './qr/animated-ur';
+export { RawModule } from './raw';
+export type { ScanFeedResult, ScanRejection, UrScannerOptions } from './scan/ur-scanner';
+export { TypedUrScanner, UrScanner } from './scan/ur-scanner';
+export { UrLimits } from './ur/limits';
+export { Ur } from './ur/ur';

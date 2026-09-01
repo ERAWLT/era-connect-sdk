@@ -10,6 +10,7 @@ export default defineConfig({
     verify: 'src/verify.ts',
   },
   format: ['esm', 'cjs'],
+  fixedExtension: false,
   dts: true,
   sourcemap: true,
   clean: true,

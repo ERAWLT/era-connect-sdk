@@ -12,6 +12,8 @@
     "typecheck": "pnpm -r --filter './packages/*' typecheck"
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.3.13"
+    "@arethetypeswrong/cli": "^0.18.5",
+    "@biomejs/biome": "^2.3.13",
+    "publint": "^0.3.24"
   }
 }

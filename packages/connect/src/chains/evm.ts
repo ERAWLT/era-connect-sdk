@@ -10,11 +10,11 @@ import { Ur as UrValue } from '../ur/ur';
 import type { ChainContext, EraConnectConfig, ExpectedReply, SignRequest } from './shared';
 import {
   makeSignRequest,
-  resolveContext,
   requireReplyMap,
   requireRequestIdEcho,
   requireSignatureBytes,
   requireUrType,
+  resolveContext,
   resolveRequestId,
   toUr,
 } from './shared';

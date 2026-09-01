@@ -1,0 +1,6 @@
+{
+  "main": "../dist/btc.cjs",
+  "module": "../dist/btc.js",
+  "types": "../dist/btc.d.ts",
+  "react-native": "../dist/btc.js"
+}

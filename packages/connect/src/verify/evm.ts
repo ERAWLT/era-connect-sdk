@@ -1,7 +1,7 @@
 import { secp256k1 } from '@noble/curves/secp256k1';
 import { keccak_256 } from '@noble/hashes/sha3';
-import { bytesToHex, concatBytes, equalBytes, hexToBytes, utf8Encode } from '../core/bytes';
 import { EvmDataType, foldRecoveryId } from '../chains/evm';
+import { bytesToHex, concatBytes, equalBytes, hexToBytes, utf8Encode } from '../core/bytes';
 import type { VerifyResult } from './result';
 import { failed, unverifiable, verified } from './result';
 

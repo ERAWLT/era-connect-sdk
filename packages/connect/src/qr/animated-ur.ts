@@ -24,10 +24,7 @@ export class AnimatedUr {
   private readonly encoder: UrFountainEncoder;
 
   constructor(ur: Ur, options?: AnimatedUrOptions) {
-    this.encoder = new UrFountainEncoder(
-      ur,
-      options?.maxFragmentLength ?? DEFAULT_FRAGMENT_LENGTH,
-    );
+    this.encoder = new UrFountainEncoder(ur, options?.maxFragmentLength ?? DEFAULT_FRAGMENT_LENGTH);
   }
 
   /** Whether the payload fits one QR (no animation needed). */

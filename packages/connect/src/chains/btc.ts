@@ -1,8 +1,8 @@
 import { base64 } from '@scure/base';
+import { cborDecode } from '../cbor/decode';
 import { cborEncode } from '../cbor/encode';
 import type { CborValue } from '../cbor/model';
 import { asBytes, cbArray, cbBytes, cbMap, cbTag, cbText, cbUint, mapGet } from '../cbor/model';
-import { cborDecode } from '../cbor/decode';
 import { asciiDecode } from '../core/bytes';
 import { EraSdkError } from '../core/errors';
 import { normalizeRequestId } from '../core/rand';
@@ -12,10 +12,10 @@ import { Ur as UrValue } from '../ur/ur';
 import type { ChainContext, EraConnectConfig, ExpectedReply, SignRequest } from './shared';
 import {
   makeSignRequest,
-  resolveContext,
   requireReplyMap,
   requireRequestIdEcho,
   requireUrType,
+  resolveContext,
   resolveRequestId,
   toUr,
 } from './shared';

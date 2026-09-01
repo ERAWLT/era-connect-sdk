@@ -1,0 +1,6 @@
+{
+  "main": "../dist/solana.cjs",
+  "module": "../dist/solana.js",
+  "types": "../dist/solana.d.ts",
+  "react-native": "../dist/solana.js"
+}

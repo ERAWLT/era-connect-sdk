@@ -1,7 +1,7 @@
 import { equalBytes } from '../core/bytes';
 import { EraSdkError } from '../core/errors';
 import type { ParsedPsbt } from './psbt-reader';
-import { inputEntries, inputHas, parsePsbt, PsbtInputType } from './psbt-reader';
+import { inputEntries, inputHas, PsbtInputType, parsePsbt } from './psbt-reader';
 import type { VerifyResult } from './result';
 import { failed, verified } from './result';
 
@@ -151,9 +151,7 @@ function headerRangeFor(address: string): HeaderRange | null {
 }
 
 function looksBase58(address: string): boolean {
-  return (
-    address.length >= 26 && address.length <= 35 && /^[1-9A-HJ-NP-Za-km-z]+$/.test(address)
-  );
+  return address.length >= 26 && address.length <= 35 && /^[1-9A-HJ-NP-Za-km-z]+$/.test(address);
 }
 
 function message(e: unknown): string {

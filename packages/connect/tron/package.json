@@ -1,0 +1,6 @@
+{
+  "main": "../dist/tron.cjs",
+  "module": "../dist/tron.js",
+  "types": "../dist/tron.d.ts",
+  "react-native": "../dist/tron.js"
+}

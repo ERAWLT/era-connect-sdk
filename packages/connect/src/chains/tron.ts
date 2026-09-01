@@ -2,7 +2,7 @@ import { cborEncode } from '../cbor/encode';
 import { asBytes, cbBytes, cbMap, cbText, mapGet } from '../cbor/model';
 import { EraSdkError } from '../core/errors';
 import { normalizeRequestId, uuidStringify } from '../core/rand';
-import { keypath304, normalizeXfp, parsePath, xfpToHex } from '../registry/keypath';
+import { normalizeXfp, parsePath, xfpToHex } from '../registry/keypath';
 import { gunzipCapped, gzipCompress } from '../tron-proto/gzip';
 import type { SignedTronTx, TronLatestBlock } from '../tron-proto/messages';
 import {
@@ -15,9 +15,9 @@ import { Ur as UrValue } from '../ur/ur';
 import type { ChainContext, EraConnectConfig, ExpectedReply, SignRequest } from './shared';
 import {
   makeSignRequest,
-  resolveContext,
   requireReplyMap,
   requireUrType,
+  resolveContext,
   resolveRequestId,
   toUr,
 } from './shared';
@@ -192,8 +192,7 @@ function parseTronSignature(
     throw new EraSdkError('malformed-reply', 'keystone-sign-result has no signed transaction');
   }
   const signedTx = splitSignedTronTx(result.rawTx);
-  const requestId =
-    expectedRequestId ?? signIdToBytes(result.signId);
+  const requestId = expectedRequestId ?? signIdToBytes(result.signId);
   return { requestId, txId: result.txId, rawTx: result.rawTx, signedTx };
 }
 

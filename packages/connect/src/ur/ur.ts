@@ -7,7 +7,7 @@ export class Ur {
   readonly cbor: Uint8Array;
 
   constructor(type: string, cbor: Uint8Array) {
-    if (!/^[a-z][a-z0-9\-]*$/.test(type)) {
+    if (!/^[a-z][a-z0-9-]*$/.test(type)) {
       throw new EraSdkError('invalid-props', `"${type}" is not a valid UR type`);
     }
     this.type = type;
@@ -25,7 +25,7 @@ export class Ur {
   }
 }
 
-const UR_GRAMMAR = /^ur:([a-z\-]+)(\/(\d+-\d+))?\/([a-z]+)$/;
+const UR_GRAMMAR = /^ur:([a-z-]+)(\/(\d+-\d+))?\/([a-z]+)$/;
 
 export interface ParsedUrParts {
   readonly type: string;
@@ -65,7 +65,7 @@ export function parseUrString(text: string): ParsedUrParts {
 }
 
 /** The `ur:<type>/` prefix of a frame, without decoding the bytewords body. */
-const TYPE_PREFIX = /^ur:([a-z][a-z0-9\-]*)\//;
+const TYPE_PREFIX = /^ur:([a-z][a-z0-9-]*)\//;
 
 export function urTypeOf(text: string): string | null {
   const match = TYPE_PREFIX.exec(text.toLowerCase());

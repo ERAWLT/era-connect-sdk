@@ -27,11 +27,7 @@ export class UrFountainEncoder {
     if (ur.cbor.length === 0) {
       throw new EraSdkError('invalid-props', 'cannot encode an empty UR payload');
     }
-    if (
-      maxFragmentLength < minFragmentLength ||
-      maxFragmentLength <= 0 ||
-      minFragmentLength <= 0
-    ) {
+    if (maxFragmentLength < minFragmentLength || maxFragmentLength <= 0 || minFragmentLength <= 0) {
       throw new EraSdkError('invalid-props', 'invalid fragment length bounds');
     }
     this.ur = ur;
@@ -72,11 +68,7 @@ export class UrFountainEncoder {
 }
 
 /** Largest `ceil(len/count) <= maxLength` split, last fragment zero-padded. */
-function partition(
-  payload: Uint8Array,
-  maxLength: number,
-  minLength: number,
-): Uint8Array[] {
+function partition(payload: Uint8Array, maxLength: number, minLength: number): Uint8Array[] {
   const maxCount = Math.ceil(payload.length / minLength);
   let fragmentLength = payload.length;
   for (let count = 1; count <= maxCount; count++) {

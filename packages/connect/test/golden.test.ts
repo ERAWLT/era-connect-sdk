@@ -1,12 +1,12 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { EraConnect } from '../src/index';
-import { EvmDataType } from '../src/chains/evm';
-import { SolSignType } from '../src/chains/solana';
 import { cborDecode } from '../src/cbor/decode';
 import { asBytes, asText, mapGet } from '../src/cbor/model';
+import { EvmDataType } from '../src/chains/evm';
+import { SolSignType } from '../src/chains/solana';
 import { bytesToHex } from '../src/core/bytes';
+import { EraConnect } from '../src/index';
 import { gunzipCapped } from '../src/tron-proto/gzip';
 
 /**
@@ -45,7 +45,14 @@ const signData = new Uint8Array(Array.from({ length: 40 }, (_, i) => i));
 const bigSignData = new Uint8Array(Array.from({ length: 700 }, (_, i) => i % 251));
 const address = new Uint8Array(20).fill(0xab);
 const solPubkey = new Uint8Array(32).fill(0x07);
-const psbt = new Uint8Array([0x70, 0x73, 0x62, 0x74, 0xff, ...Array.from({ length: 60 }, (_, i) => i)]);
+const psbt = new Uint8Array([
+  0x70,
+  0x73,
+  0x62,
+  0x74,
+  0xff,
+  ...Array.from({ length: 60 }, (_, i) => i),
+]);
 const tronRawData = new Uint8Array(Array.from({ length: 120 }, (_, i) => (i * 7) % 256));
 const tronLatestBlock = {
   hash: '00000000045bcdc4c2ff1c56cf2b7ecdb60e0e26e3859ca9ff0a80b2f5502424',
@@ -53,7 +60,10 @@ const tronLatestBlock = {
   timestamp: 1721908800000,
 };
 
-function expectGolden(name: string, ur: { type: string; cbor: Uint8Array; toWireString(): string }) {
+function expectGolden(
+  name: string,
+  ur: { type: string; cbor: Uint8Array; toWireString(): string },
+) {
   const golden = caseByName(name);
   expect(ur.type).toBe(golden.urType);
   expect(bytesToHex(ur.cbor)).toBe(golden.requestCborHex);

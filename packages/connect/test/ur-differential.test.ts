@@ -1,4 +1,8 @@
-import { UR as NgraveUr, URDecoder as NgraveDecoder, UREncoder as NgraveEncoder } from '@ngraveio/bc-ur';
+import {
+  URDecoder as NgraveDecoder,
+  UREncoder as NgraveEncoder,
+  UR as NgraveUr,
+} from '@ngraveio/bc-ur';
 import { describe, expect, it } from 'vitest';
 import { bytesToHex } from '../src/core/bytes';
 import { UrDecoder } from '../src/ur/decoder';

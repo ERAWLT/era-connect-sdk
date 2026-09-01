@@ -32,7 +32,12 @@
   "sideEffects": false,
   "files": [
     "dist",
-    "proto"
+    "proto",
+    "evm",
+    "btc",
+    "solana",
+    "tron",
+    "verify"
   ],
   "engines": {
     "node": ">=18"
@@ -42,40 +47,70 @@
   },
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
       "react-native": "./dist/index.js",
-      "import": "./dist/index.js",
-      "require": "./dist/index.cjs"
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
     },
     "./evm": {
-      "types": "./dist/evm.d.ts",
       "react-native": "./dist/evm.js",
-      "import": "./dist/evm.js",
-      "require": "./dist/evm.cjs"
+      "import": {
+        "types": "./dist/evm.d.ts",
+        "default": "./dist/evm.js"
+      },
+      "require": {
+        "types": "./dist/evm.d.cts",
+        "default": "./dist/evm.cjs"
+      }
     },
     "./btc": {
-      "types": "./dist/btc.d.ts",
       "react-native": "./dist/btc.js",
-      "import": "./dist/btc.js",
-      "require": "./dist/btc.cjs"
+      "import": {
+        "types": "./dist/btc.d.ts",
+        "default": "./dist/btc.js"
+      },
+      "require": {
+        "types": "./dist/btc.d.cts",
+        "default": "./dist/btc.cjs"
+      }
     },
     "./solana": {
-      "types": "./dist/solana.d.ts",
       "react-native": "./dist/solana.js",
-      "import": "./dist/solana.js",
-      "require": "./dist/solana.cjs"
+      "import": {
+        "types": "./dist/solana.d.ts",
+        "default": "./dist/solana.js"
+      },
+      "require": {
+        "types": "./dist/solana.d.cts",
+        "default": "./dist/solana.cjs"
+      }
     },
     "./tron": {
-      "types": "./dist/tron.d.ts",
       "react-native": "./dist/tron.js",
-      "import": "./dist/tron.js",
-      "require": "./dist/tron.cjs"
+      "import": {
+        "types": "./dist/tron.d.ts",
+        "default": "./dist/tron.js"
+      },
+      "require": {
+        "types": "./dist/tron.d.cts",
+        "default": "./dist/tron.cjs"
+      }
     },
     "./verify": {
-      "types": "./dist/verify.d.ts",
       "react-native": "./dist/verify.js",
-      "import": "./dist/verify.js",
-      "require": "./dist/verify.cjs"
+      "import": {
+        "types": "./dist/verify.d.ts",
+        "default": "./dist/verify.js"
+      },
+      "require": {
+        "types": "./dist/verify.d.cts",
+        "default": "./dist/verify.cjs"
+      }
     },
     "./package.json": "./package.json"
   },
@@ -97,7 +132,7 @@
     "@types/node": "^26.4.0",
     "cbor2": "^1.7.0",
     "fast-check": "^3.23.2",
-    "tsdown": "^0.12.9",
+    "tsdown": "^0.22.14",
     "typescript": "^5.7.3",
     "vitest": "^3.0.5"
   }

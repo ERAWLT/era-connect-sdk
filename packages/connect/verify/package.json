@@ -1,0 +1,6 @@
+{
+  "main": "../dist/verify.cjs",
+  "module": "../dist/verify.js",
+  "types": "../dist/verify.d.ts",
+  "react-native": "../dist/verify.js"
+}

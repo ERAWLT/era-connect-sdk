@@ -132,7 +132,10 @@ export function parsePsbt(bytes: Uint8Array): ParsedPsbt {
     if (entry.keyType === 0xfb && entry.keyData.length === 0) {
       if (entry.value.length !== 4) throw err('bad version field');
       version =
-        (entry.value[0]! | (entry.value[1]! << 8) | (entry.value[2]! << 16) | (entry.value[3]! << 24)) >>>
+        (entry.value[0]! |
+          (entry.value[1]! << 8) |
+          (entry.value[2]! << 16) |
+          (entry.value[3]! << 24)) >>>
         0;
     }
   }

@@ -1,7 +1,7 @@
-import type { AnimatedUrOptions } from './qr/animated-ur';
-import { AnimatedUr } from './qr/animated-ur';
 import type { ChainContext } from './chains/shared';
 import { toUr } from './chains/shared';
+import type { AnimatedUrOptions } from './qr/animated-ur';
+import { AnimatedUr } from './qr/animated-ur';
 import type { Ur } from './ur/ur';
 import { Ur as UrValue } from './ur/ur';
 

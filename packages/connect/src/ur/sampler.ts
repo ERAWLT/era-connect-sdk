@@ -36,7 +36,7 @@ export function chooseFragmentIndexes(
   const scaled = new Array<number>(seqLength);
   let sum = 0;
   for (let i = 0; i < seqLength; i++) sum += 1 / (i + 1);
-  for (let i = 0; i < seqLength; i++) scaled[i] = (1 / (i + 1)) * seqLength / sum;
+  for (let i = 0; i < seqLength; i++) scaled[i] = ((1 / (i + 1)) * seqLength) / sum;
 
   const prob = new Array<number>(seqLength).fill(0);
   const alias = new Array<number>(seqLength).fill(0);

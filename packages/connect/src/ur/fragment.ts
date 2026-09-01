@@ -26,7 +26,13 @@ export function fragmentCbor(
   part: Uint8Array,
 ): Uint8Array {
   return cborEncode(
-    cbArray([cbUint(seqNum), cbUint(seqLength), cbUint(messageLength), cbUint(checksum), cbBytes(part)]),
+    cbArray([
+      cbUint(seqNum),
+      cbUint(seqLength),
+      cbUint(messageLength),
+      cbUint(checksum),
+      cbBytes(part),
+    ]),
   );
 }
 
@@ -79,7 +85,7 @@ export function tryParseFragment(type: string, payload: Uint8Array): Fragment | 
 
 /** A CBOR uint in [0, 2^32), or null for anything else. */
 function uintInRange(value: { kind: string } | undefined): number | null {
-  if (!value || value.kind !== 'uint') return null;
+  if (value?.kind !== 'uint') return null;
   const big = (value as { kind: 'uint'; value: bigint }).value;
   if (big < 0n || big > BigInt(UrLimits.maxUint32)) return null;
   return Number(big);

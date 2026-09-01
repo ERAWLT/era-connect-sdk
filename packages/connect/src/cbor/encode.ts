@@ -79,7 +79,13 @@ function head(major: number, arg: bigint): Uint8Array {
   }
   if (arg <= 0xffffffffn) {
     const n = Number(arg);
-    return new Uint8Array([m | 26, (n >>> 24) & 0xff, (n >>> 16) & 0xff, (n >>> 8) & 0xff, n & 0xff]);
+    return new Uint8Array([
+      m | 26,
+      (n >>> 24) & 0xff,
+      (n >>> 16) & 0xff,
+      (n >>> 8) & 0xff,
+      n & 0xff,
+    ]);
   }
   if (arg <= 0xffffffffffffffffn) {
     const out = new Uint8Array(9);

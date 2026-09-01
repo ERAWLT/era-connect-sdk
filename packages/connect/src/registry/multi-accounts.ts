@@ -133,8 +133,7 @@ function tryParseEntry(item: CborValue): RawAccountEntry | null {
     xfp: Number(xfp),
     publicKey,
     chainCode: asBytes(mapGet(map, 4)) ?? null,
-    parentFingerprint:
-      parentFp !== undefined && parentFp <= 0xffffffffn ? Number(parentFp) : null,
+    parentFingerprint: parentFp !== undefined && parentFp <= 0xffffffffn ? Number(parentFp) : null,
     name: asText(mapGet(map, 9)) ?? null,
     note: asText(mapGet(map, 10)) ?? null,
   };

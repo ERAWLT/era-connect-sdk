@@ -100,7 +100,9 @@ export function resolveRequestId(
   context: ChainContext,
   requestId: Uint8Array | string | undefined,
 ): Uint8Array {
-  return requestId === undefined ? randomRequestId(context.randomBytes) : normalizeRequestId(requestId);
+  return requestId === undefined
+    ? randomRequestId(context.randomBytes)
+    : normalizeRequestId(requestId);
 }
 
 /** Accept a reply as a `Ur` object or a single-part `ur:` string. */
@@ -135,7 +137,10 @@ export function requireReplyMap(ur: Ur, what: string): CborValue {
   try {
     decoded = cborDecode(ur.cbor);
   } catch (e) {
-    throw new EraSdkError('malformed-cbor', `${what} is not readable CBOR: ${(e as Error).message}`);
+    throw new EraSdkError(
+      'malformed-cbor',
+      `${what} is not readable CBOR: ${(e as Error).message}`,
+    );
   }
   const map = asMap(decoded);
   if (!map) throw new EraSdkError('malformed-reply', `${what} is not a CBOR map`);

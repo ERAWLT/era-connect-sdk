@@ -1,0 +1,6 @@
+{
+  "main": "../dist/evm.cjs",
+  "module": "../dist/evm.js",
+  "types": "../dist/evm.d.ts",
+  "react-native": "../dist/evm.js"
+}

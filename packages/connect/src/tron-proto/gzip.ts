@@ -1,4 +1,4 @@
-import { gzipSync, Gunzip } from 'fflate';
+import { Gunzip, gzipSync } from 'fflate';
 import { concatBytes } from '../core/bytes';
 import { EraSdkError } from '../core/errors';
 
@@ -36,7 +36,7 @@ export function gunzipCapped(data: Uint8Array, maxOutputBytes: number): Uint8Arr
   }
   const n = data.length;
   const isize =
-    ((data[n - 4]! | (data[n - 3]! << 8) | (data[n - 2]! << 16) | (data[n - 1]! << 24)) >>> 0);
+    (data[n - 4]! | (data[n - 3]! << 8) | (data[n - 2]! << 16) | (data[n - 1]! << 24)) >>> 0;
   if (isize > maxOutputBytes) {
     throw new EraSdkError(
       'gzip-error',

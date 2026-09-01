@@ -73,10 +73,19 @@ export function serializeExtendedPublicKey(args: {
   chainCode: Uint8Array;
   publicKey: Uint8Array;
 }): string {
-  const { version = XPUB_VERSION, depth, parentFingerprint, childNumber, chainCode, publicKey } =
-    args;
+  const {
+    version = XPUB_VERSION,
+    depth,
+    parentFingerprint,
+    childNumber,
+    chainCode,
+    publicKey,
+  } = args;
   if (chainCode.length !== 32 || publicKey.length !== 33) {
-    throw new EraSdkError('invalid-props', 'extended key needs a 32-byte chain code and 33-byte key');
+    throw new EraSdkError(
+      'invalid-props',
+      'extended key needs a 32-byte chain code and 33-byte key',
+    );
   }
   return base58check.encode(
     concatBytes(
