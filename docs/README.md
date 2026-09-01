@@ -1,7 +1,7 @@
 # ERA Connect SDK — Documentation
 
 Integrate the **ERA hardware wallet** into your software wallet over
-air-gapped animated QR codes. Four steps, four chains, one SDK.
+air-gapped animated QR codes. Five steps, ten chain families, one SDK.
 
 ## Getting started (read in order — ~15 minutes to a working signature)
 

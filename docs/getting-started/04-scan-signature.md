@@ -31,7 +31,7 @@ questionable signature:
 | `wrong-ur-type` | The assembled UR is not an answer to this request |
 | `request-id-mismatch` | The reply answers a DIFFERENT request (stale/cancelled flow) |
 | `malformed-reply` / `malformed-cbor` | The reply does not have the chain's shape |
-| `empty-signature` | Bitcoin message signing on a non-legacy address |
+| `empty-signature` | Bitcoin message signing for an address kind the firmware cannot sign — Taproot on firmware 2.1.0+; anything but legacy P2PKH on older firmware |
 | `limit-exceeded` / `gzip-error` | The reply exceeds protocol ceilings (Tron) |
 | `incomplete-scan` | `parse()` before the scan completed |
 

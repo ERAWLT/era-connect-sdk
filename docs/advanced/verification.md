@@ -25,6 +25,11 @@ type VerifyResult =
 | `verifySolanaSignature` | Ed25519 verify against the signer key | Pass `broadcastMessageBytes` — on Solana "what was signed" and "what you send" drift legitimately (blockhash refresh) and must agree |
 | `verifyTronSignature` | Every signature recovers to the owner; `raw_data` byte-equal, or (rebuild path) same operation + validity window | An operation it cannot compare field-by-field is refused |
 | `verifyBchSignedTx` | Every outpoint/output/value equals the request; each input signed by the requested key with sighash 0x41, re-verified against a locally recomputed BIP-143 FORKID sighash | **Mandatory** — the reply is a complete broadcastable transaction; the `signId` echo alone does not prove its contents |
+| `verifyTonSignature` | Ed25519 against the linked key over a locally recomputed digest: the BoC root-cell representation hash (transactions) or the TON Connect proof digest | Pass the same bytes you put in the request |
+| `verifyCardanoSignature` | Every witness verifies over the blake2b-256 of the encoded tx body, each vkey bound to the account by soft public derivation | Needs the linked account's public key + chain code |
+| `verifySuiSignature` | Ed25519 over the blake2b-256 intent digest | Also covers the hash-variant request |
+| `verifyCosmosSignature` | secp256k1 over sha256 (or keccak-256 for Ethermint zones) of the sign doc | Digest choice follows the request's zone |
+| `verifyXrpSignature` | The STObject re-walked in canonical order, `'STX\0'`-prefixed, SHA-512-half, verified against `SigningPubKey` | **Mandatory** — the XRP path carries NO request id; content verification is the only binding |
 
 ## The honest gap: EIP-712
 

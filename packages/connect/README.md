@@ -68,15 +68,15 @@ verifyEvmSignature({ signData: rlpBytes, dataType: 1,
 
 ## Chain support
 
-The ERA device is multichain; the SDK ships dedicated modules for four chains
-today and speaks the rest through the same primitives.
+The ERA device is multichain, and the SDK ships a dedicated module for every
+chain family the current firmware supports.
 
 **Dedicated modules:**
 
 | Chain | Sign transaction | Sign message | Subpath |
 |---|---|---|---|
 | EVM (all chains) | `eth-sign-request` | personal_sign / EIP-712 | `@hwlt/era-connect/evm` |
-| Bitcoin | `crypto-psbt` (PSBT v0) | legacy P2PKH only | `@hwlt/era-connect/btc` |
+| Bitcoin | `crypto-psbt` (PSBT v0) | BIP-44/49/84 on firmware 2.1.0+ (Taproot refused); legacy P2PKH on older | `@hwlt/era-connect/btc` |
 | Solana | `sol-sign-request` | off-chain messages | `@hwlt/era-connect/solana` |
 | Tron | structured envelope (any contract via `rawData`) | UTF-8 in `rawData` | `@hwlt/era-connect/tron` |
 | TON | `ton-sign-request` (BoC root-hash signing) | TON Connect proof | `@hwlt/era-connect/ton` |
