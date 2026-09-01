@@ -1,0 +1,18 @@
+{
+  "expo": {
+    "name": "ERA Connect Demo",
+    "slug": "era-connect-demo",
+    "version": "0.0.1",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark",
+    "newArchEnabled": true,
+    "ios": {
+      "supportsTablet": false,
+      "infoPlist": { "NSCameraUsageDescription": "Scan QR codes from the ERA hardware wallet." }
+    },
+    "android": { "permissions": ["CAMERA"], "package": "com.erawallet.connectdemo" },
+    "plugins": [
+      ["expo-camera", { "cameraPermission": "Scan QR codes from the ERA hardware wallet." }]
+    ]
+  }
+}

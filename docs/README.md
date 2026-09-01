@@ -1,0 +1,34 @@
+# ERA Connect SDK — Documentation
+
+Integrate the **ERA hardware wallet** into your software wallet over
+air-gapped animated QR codes. Four steps, four chains, one SDK.
+
+## Getting started (read in order — ~15 minutes to a working signature)
+
+1. [Install & set up](getting-started/01-install.md)
+2. [Link the device](getting-started/02-link-device.md) — scan `crypto-multi-accounts`, derive addresses locally
+3. [Display a sign request](getting-started/03-display-request.md) — animated QR out
+4. [Scan the signature](getting-started/04-scan-signature.md) — animated QR in
+5. [Verify & broadcast](getting-started/05-broadcast.md) — prove it, then send it with your stack
+
+## Per-chain guides
+
+- [EVM](chains/evm.md) — transactions, personal_sign, EIP-712
+- [Bitcoin](chains/bitcoin.md) — PSBT v0, message signing
+- [Solana](chains/solana.md) — transactions (incl. versioned), off-chain messages
+- [Tron](chains/tron.md) — any contract via `rawData`
+
+## Advanced
+
+- [Device specifics](advanced/device-specifics.md) — exact deviations from the Keystone registry, and why
+- [Verification](advanced/verification.md) — "did the device sign exactly what I sent?"
+- [QR tuning](advanced/qr-tuning.md) — fragment sizes, frame rates, progress and timeouts
+- [Key derivation calls](advanced/key-derivation-call.md) — the wallet asks the device for specific paths
+- [WalletConnect](advanced/walletconnect.md) — backing a WC wallet with the device (forwarding model + result shapes)
+- [Migrating from @keystonehq/keystone-sdk](advanced/migrating-from-keystone-sdk.md)
+
+## Protocol
+
+[`protocol/era-hardware-wallet-integration.md`](protocol/era-hardware-wallet-integration.md)
+is the normative wire specification (UR/CBOR layouts, per-chain byte formats).
+The SDK encodes it; the spec is what you implement if you cannot use the SDK.

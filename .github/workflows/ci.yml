@@ -1,0 +1,55 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node: [20, 22]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v6
+        with:
+          node-version: ${{ matrix.node }}
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec biome ci .
+      - run: pnpm --filter @era-wallet/connect typecheck
+      - run: pnpm --filter @era-wallet/connect test
+      - run: pnpm --filter @era-wallet/connect build
+      # Guard the exports map — a regression here breaks Metro/Node resolution silently.
+      - run: pnpm exec publint
+        working-directory: packages/connect
+      - run: pnpm exec attw --pack .
+        working-directory: packages/connect
+      - name: Pack artifact for manual smoke installs
+        if: matrix.node == 22
+        run: pnpm --filter @era-wallet/connect pack --out era-wallet-connect.tgz
+      - uses: actions/upload-artifact@v4
+        if: matrix.node == 22
+        with:
+          name: npm-tarball
+          path: packages/connect/era-wallet-connect.tgz
+
+  nightly-fuzz:
+    # Longer property-test runs on a schedule would go here (workflow_dispatch
+    # for now; add `schedule:` once the repository is active).
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @era-wallet/connect test
+        env:
+          FC_NUM_RUNS: '10000'
