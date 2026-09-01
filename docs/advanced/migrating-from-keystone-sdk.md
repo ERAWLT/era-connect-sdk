@@ -31,4 +31,5 @@ Differences to check during the port:
 - Byte inputs are `Uint8Array` everywhere (no implicit hex strings, no Buffer).
 - Tron uses the structured envelope with an explicit `latestBlock` — the
   registry's `tron-sign-request` type is NOT accepted by the device.
-- Bitcoin message signing is legacy-P2PKH-only on this device.
+- Bitcoin message signing is firmware-dependent: 2.1.0+ signs BIP-44/49/84
+  (Taproot refused, `xfp` required); older firmware is legacy-P2PKH-only.

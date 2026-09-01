@@ -64,7 +64,8 @@ const request = era.btc.generatePsbtSignRequest({ psbt, coin: 'ltc' }); // 'doge
 Everything else — the signed-not-finalized reply, `verifySignedPsbt` as the
 mandatory binding, finalize + broadcast with your own stack — is identical.
 Linked account paths: LTC `m/84'/2'/0'`, DOGE `m/44'/3'/0'`, DASH `m/44'/5'/0'`
-(`accounts.keys` carries them; they classify as `btc`-family by path).
+(`accounts.keys` carries them with `chain: 'unknown'` — the classifier maps
+only coin-type 0' to `btc`; find these entries by their derivation path).
 Bitcoin Cash is NOT offered on this path — its FORKID sighash needs the
 device's structured envelope. It has its own module: see
 [Bitcoin Cash](bch.md) (`@hwlt/era-connect/bch`).
