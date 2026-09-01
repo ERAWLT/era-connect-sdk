@@ -93,7 +93,12 @@ export function utf8Encode(text: string): Uint8Array {
   return new Uint8Array(out);
 }
 
-/** UTF-8 decode without TextDecoder (absent on older Hermes). Throws on malformed input. */
+/**
+ * STRICT UTF-8 decode without TextDecoder (absent on older Hermes). Throws on
+ * malformed input, including overlong encodings, surrogate code points and
+ * values past U+10FFFF — a lenient decoder would let a hostile reply smuggle
+ * bytes that render as different text than they compare as.
+ */
 export function utf8Decode(bytes: Uint8Array): string {
   let out = '';
   let i = 0;
@@ -106,17 +111,21 @@ export function utf8Decode(bytes: Uint8Array): string {
     }
     let extra: number;
     let code: number;
+    let minCode: number;
     if ((b0 & 0xe0) === 0xc0) {
       extra = 1;
       code = b0 & 0x1f;
+      minCode = 0x80;
     } else if ((b0 & 0xf0) === 0xe0) {
       extra = 2;
       code = b0 & 0x0f;
+      minCode = 0x800;
     } else if ((b0 & 0xf8) === 0xf0) {
       extra = 3;
       code = b0 & 0x07;
+      minCode = 0x10000;
     } else {
-      throw new Error('malformed UTF-8');
+      throw new Error('malformed UTF-8'); // continuation or F8-FF lead byte
     }
     if (i + extra >= bytes.length) throw new Error('truncated UTF-8');
     for (let k = 1; k <= extra; k++) {
@@ -124,6 +133,9 @@ export function utf8Decode(bytes: Uint8Array): string {
       if ((bk & 0xc0) !== 0x80) throw new Error('malformed UTF-8 continuation');
       code = (code << 6) | (bk & 0x3f);
     }
+    if (code < minCode) throw new Error('overlong UTF-8 encoding');
+    if (code >= 0xd800 && code <= 0xdfff) throw new Error('UTF-8 encodes a surrogate');
+    if (code > 0x10ffff) throw new Error('UTF-8 code point out of range');
     if (code > 0xffff) {
       code -= 0x10000;
       out += String.fromCharCode(0xd800 + (code >> 10), 0xdc00 + (code & 0x3ff));

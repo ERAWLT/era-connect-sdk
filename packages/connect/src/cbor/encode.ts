@@ -18,7 +18,10 @@ export function cborEncode(value: CborValue): Uint8Array {
   return concatBytes(...parts);
 }
 
-const MAX_DEPTH = 8;
+// Deep enough for the deepest registry structure the SDK speaks (the
+// qr-hardware-call tree nests 9 levels once tags and map entries are
+// counted), with headroom; still a hard bound against recursion abuse.
+const MAX_DEPTH = 16;
 
 function writeValue(value: CborValue, parts: Uint8Array[], depth: number): void {
   if (depth > MAX_DEPTH) {

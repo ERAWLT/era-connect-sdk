@@ -52,7 +52,8 @@ const request = era.tron.generateSignRequest({
 ## 2. Parse the signature
 
 ```ts
-const sig = request.scanner().parse();
+const scanner = request.scanner();   // create ONCE, feed it the camera frames
+const sig = scanner.parse();
 sig.txId;      // sha256(raw_data) hex — the network txID
 sig.rawTx;     // hex of the COMPLETE signed transaction
 sig.signedTx;  // { rawData, signatures } — split for verification

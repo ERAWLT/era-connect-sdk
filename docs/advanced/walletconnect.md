@@ -18,7 +18,7 @@ sign; its screen is the review surface.
 | bip122 `signPsbt` | `era.btc.generatePsbtSignRequest` | verify with `requireEveryInputSigned: false` (a dApp PSBT may carry inputs that are not yours), then hand the signed PSBT back — do not finalize |
 | bip122 `signMessage` | `era.btc.generateMessageSignRequest` | legacy P2PKH only — see the Bitcoin guide |
 | `tron_signTransaction` / `tron_sendTransaction` | `era.tron.generateSignRequest` | `rawData` = bytes of the dApp's `raw_data_hex`, display fields left empty (the tx is opaque to you — the device decodes it) |
-| `tron_signMessage` | `era.tron.generateSignRequest` | the UTF-8 message bytes travel in `rawData` — Tron has no separate message type |
+| `tron_signMessage` | `era.tron.generateSignRequest` | the UTF-8 message bytes travel in `rawData` — Tron has no separate message type. `latestBlock` is still REQUIRED (the envelope demands a live now-block with the full 64-hex id, even for a message) |
 
 ## Result shapes dApps expect
 

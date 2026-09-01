@@ -124,10 +124,12 @@ export function toUr(input: Ur | string): Ur {
 
 export function requireUrType(ur: Ur, expected: readonly string[], what: string): void {
   if (!expected.includes(ur.type)) {
+    // Attacker-sized string — truncate before it reaches a message or error data.
+    const shown = ur.type.length > 32 ? `${ur.type.slice(0, 32)}…` : ur.type;
     throw new EraSdkError(
       'wrong-ur-type',
-      `unexpected ${what} UR type "${ur.type}", expected ${expected.join(' or ')}`,
-      { received: ur.type, expected },
+      `unexpected ${what} UR type "${shown}", expected ${expected.join(' or ')}`,
+      { received: shown, expected },
     );
   }
 }

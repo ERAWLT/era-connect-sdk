@@ -54,16 +54,25 @@ class Reader {
     return b;
   }
 
-  /** Bitcoin compact-size integer. */
+  /** Bitcoin compact-size integer, MINIMAL encoding required (as consensus does). */
   compactSize(): number {
     const first = this.u8();
     if (first < 0xfd) return first;
     let width: number;
-    if (first === 0xfd) width = 2;
-    else if (first === 0xfe) width = 4;
-    else width = 8;
+    let minimum: bigint;
+    if (first === 0xfd) {
+      width = 2;
+      minimum = 0xfdn;
+    } else if (first === 0xfe) {
+      width = 4;
+      minimum = 0x10000n;
+    } else {
+      width = 8;
+      minimum = 0x100000000n;
+    }
     let value = 0n;
     for (let i = 0; i < width; i++) value |= BigInt(this.u8()) << BigInt(8 * i);
+    if (value < minimum) throw err('non-minimal compact-size encoding');
     if (value > BigInt(Number.MAX_SAFE_INTEGER)) throw err('length exceeds safe range');
     return Number(value);
   }
@@ -115,6 +124,7 @@ function countTxInputsOutputs(tx: Uint8Array): { inputs: number; outputs: number
     reader.take(reader.compactSize()); // scriptPubKey
   }
   reader.take(4); // locktime
+  if (reader.remaining !== 0) throw err('trailing bytes after the unsigned transaction');
   return { inputs, outputs };
 }
 

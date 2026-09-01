@@ -36,7 +36,8 @@ The reply is the **signed, NOT finalized** PSBT:
 ```ts
 import { verifySignedPsbt } from '@era-wallet/connect/verify';
 
-const { psbt: signed } = request.scanner().parse();
+const scanner = request.scanner();   // create ONCE, feed it the camera frames
+const { psbt: signed } = scanner.parse();
 const check = verifySignedPsbt({ sentPsbt: psbtBytes, signedPsbt: signed });
 if (!check.ok) throw new Error(check.reason);   // THE anti-replay binding — never skip
 
@@ -52,22 +53,28 @@ hand-backs where some inputs are not yours).
 
 ## 1b. Messages
 
+**The device signs messages for legacy P2PKH (`1…`) addresses only** — use
+the purpose-44 account, not the default segwit one:
+
 ```ts
+const legacy = accounts.btc({ purpose: 44 });   // the BIP-44 legacy account
+if (!legacy) throw new Error('the export carries no legacy account');
+
 const request = era.btc.generateMessageSignRequest({
   message: utf8Bytes,
-  path: "m/84'/0'/0'/0/0",
-  xfp: btc.xfp,
-  address, // ⚠️ see below
+  path: legacy.receivePath(0),                  // m/44'/0'/0'/0/0
+  xfp: legacy.xfp,
+  address: legacy.deriveAddress(0),             // '1…'
 });
 ```
 
-**The device signs messages for legacy P2PKH (`1…`) addresses only.** Any
-segwit address produces an empty reply, which `parse()` surfaces as
+A segwit address produces an empty reply, which `parse()` surfaces as
 `EraSdkError('empty-signature')` with that explanation — show it to the user
 instead of a generic failure.
 
 ```ts
-const sig = request.scanner().parse();
+const scanner = request.scanner();   // create ONCE, feed it the camera frames
+const sig = scanner.parse();
 sig.signature;        // raw 65-byte BIP-137 (the wire carries base64-as-ASCII;
 sig.signatureBase64;  //   the SDK undoes that quirk for you)
 ```

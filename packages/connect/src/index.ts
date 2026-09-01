@@ -99,7 +99,7 @@ export class EraConnect {
 // Public types & modules
 // ---------------------------------------------------------------------------
 
-export type { AccountChain, AccountKey, DeviceInfo } from './accounts/accounts';
+export type { AccountChain, AccountKey, BtcPurpose, DeviceInfo } from './accounts/accounts';
 export {
   BtcAccountView,
   EraAccounts,

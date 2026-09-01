@@ -41,13 +41,34 @@ export function evmAddressFromPublicKey(publicKey33: Uint8Array): `0x${string}` 
   return `0x${out}`;
 }
 
+function hash160(data: Uint8Array): Uint8Array {
+  return ripemd160(sha256(data));
+}
+
 /** P2WPKH (witness v0) bech32 address. */
 export function btcP2wpkhAddressFromPublicKey(
   publicKey33: Uint8Array,
   hrp: 'bc' | 'tb' = 'bc',
 ): string {
-  const program = ripemd160(sha256(publicKey33));
-  return bech32.encode(hrp, [0, ...bech32.toWords(program)]);
+  return bech32.encode(hrp, [0, ...bech32.toWords(hash160(publicKey33))]);
+}
+
+/** Legacy P2PKH base58check address (`1...`) — the kind the device signs messages for. */
+export function btcP2pkhAddressFromPublicKey(publicKey33: Uint8Array, testnet = false): string {
+  return base58check.encode(
+    concatBytes(new Uint8Array([testnet ? 0x6f : 0x00]), hash160(publicKey33)),
+  );
+}
+
+/** Nested segwit (P2SH-P2WPKH) base58check address (`3...`). */
+export function btcNestedSegwitAddressFromPublicKey(
+  publicKey33: Uint8Array,
+  testnet = false,
+): string {
+  const redeemScript = concatBytes(new Uint8Array([0x00, 0x14]), hash160(publicKey33));
+  return base58check.encode(
+    concatBytes(new Uint8Array([testnet ? 0xc4 : 0x05]), hash160(redeemScript)),
+  );
 }
 
 /** Tron base58check address (0x41-prefixed keccak hash). */
