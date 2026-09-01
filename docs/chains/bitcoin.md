@@ -66,12 +66,17 @@ mandatory binding, finalize + broadcast with your own stack — is identical.
 Linked account paths: LTC `m/84'/2'/0'`, DOGE `m/44'/3'/0'`, DASH `m/44'/5'/0'`
 (`accounts.keys` carries them; they classify as `btc`-family by path).
 Bitcoin Cash is NOT offered on this path — its FORKID sighash needs the
-device's structured envelope, which this SDK does not emit yet.
+device's structured envelope. It has its own module: see
+[Bitcoin Cash](bch.md) (`@hwlt/era-connect/bch`).
 
 ## 1b. Messages
 
-**The device signs messages for legacy P2PKH (`1…`) addresses only** — use
-the purpose-44 account, not the default segwit one:
+**Which addresses are message-signable depends on the firmware.** Firmware
+2.1.0 and newer signs for BIP-44 legacy, BIP-49 nested-segwit and BIP-84
+native-segwit addresses, each with its proper BIP-137 header range (Taproot
+is refused — BIP-137 has no header for it, BIP-322 is a different scheme).
+Older firmware signs legacy P2PKH (`1…`) only. The legacy account is the
+safe choice across every firmware:
 
 ```ts
 const legacy = accounts.btc({ purpose: 44 });   // the BIP-44 legacy account
@@ -85,15 +90,19 @@ const request = era.btc.generateMessageSignRequest({
 });
 ```
 
-A segwit address produces an empty reply, which `parse()` surfaces as
-`EraSdkError('empty-signature')` with that explanation — show it to the user
-instead of a generic failure.
+On firmware 2.1.0+ the `xfp` is mandatory — the device refuses a message
+request without a source fingerprint (a message carries no other proof of
+ownership), and the path must be a full 5-level BIP-44 path. An address kind
+the firmware cannot sign for produces an empty reply, which `parse()`
+surfaces as `EraSdkError('empty-signature')` with that explanation — show it
+to the user instead of a generic failure.
 
 ```ts
 const scanner = request.scanner();   // create ONCE, feed it the camera frames
 const sig = scanner.parse();
-sig.signature;        // raw 65-byte BIP-137 (the wire carries base64-as-ASCII;
-sig.signatureBase64;  //   the SDK undoes that quirk for you)
+sig.signature;        // raw 65-byte BIP-137. Firmware 2.1.0+ sends the raw
+sig.signatureBase64;  //   bytes; older firmware sends base64-as-ASCII — the
+                      //   SDK accepts both and hands you both forms
 ```
 
 `verifyBtcMessageHeader({ address, signature })` checks the BIP-137 recovery

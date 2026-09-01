@@ -8,6 +8,7 @@ export default defineConfig({
     index: 'src/index.ts',
     evm: 'src/evm.ts',
     btc: 'src/btc.ts',
+    bch: 'src/bch.ts',
     solana: 'src/solana.ts',
     tron: 'src/tron.ts',
     ton: 'src/ton.ts',

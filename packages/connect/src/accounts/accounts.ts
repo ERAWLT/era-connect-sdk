@@ -5,6 +5,7 @@ import type { RawAccountEntry, RawMultiAccounts } from '../registry/multi-accoun
 import { parseMultiAccountsUr } from '../registry/multi-accounts';
 import type { Ur } from '../ur/ur';
 import {
+  bchAddressFromPublicKey,
   btcNestedSegwitAddressFromPublicKey,
   btcP2pkhAddressFromPublicKey,
   btcP2wpkhAddressFromPublicKey,
@@ -22,6 +23,7 @@ import {
 export type AccountChain =
   | 'evm'
   | 'btc'
+  | 'bch'
   | 'solana'
   | 'tron'
   | 'ton'
@@ -64,6 +66,7 @@ function classify(path: readonly PathLevel[]): AccountChain {
   ) {
     return 'btc';
   }
+  if (p0.index === 44 && p1.index === 145) return 'bch';
   if (p0.index === 44 && p1.index === 501) return 'solana';
   if (p0.index === 44 && p1.index === 195) return 'tron';
   if (p0.index === 44 && p1.index === 607) return 'ton';
@@ -220,6 +223,47 @@ export class TronAccountView {
     return tronAddressFromPublicKey(
       derivePublicKey(requireKey(this.entry, 33), withChainCode(this.entry), 0, index),
     );
+  }
+}
+
+/** Bitcoin Cash view: `m/44'/145'/0'`, CashAddr P2PKH addresses. */
+export class BchAccountView {
+  constructor(
+    private readonly entry: RawAccountEntry,
+    private readonly resolvedXfp: number,
+  ) {}
+
+  get xfp(): string {
+    return xfpToHex(this.resolvedXfp);
+  }
+
+  get accountPath(): string {
+    return formatPath([...this.entry.path]);
+  }
+
+  receivePath(index: number): string {
+    return `${this.accountPath}/0/${index}`;
+  }
+
+  changePath(index: number): string {
+    return `${this.accountPath}/1/${index}`;
+  }
+
+  /** The compressed public key at receive/change `index` — what a sign request's input names. */
+  derivePublicKey(index: number, options?: { change?: boolean }): Uint8Array {
+    return derivePublicKey(
+      requireKey(this.entry, 33),
+      withChainCode(this.entry),
+      options?.change ? 1 : 0,
+      index,
+    );
+  }
+
+  /** Bare CashAddr by default; `{ withPrefix: true }` for `bitcoincash:...`. */
+  deriveAddress(index: number, options?: { change?: boolean; withPrefix?: boolean }): string {
+    return bchAddressFromPublicKey(this.derivePublicKey(index, options), {
+      withPrefix: options?.withPrefix ?? false,
+    });
   }
 }
 
@@ -451,6 +495,12 @@ export class EraAccounts {
   tron(): TronAccountView | undefined {
     const entry = this.raw.entries.find((e) => classify(e.path) === 'tron');
     return entry ? new TronAccountView(entry, this.resolveXfp(entry)) : undefined;
+  }
+
+  /** The Bitcoin Cash account (`m/44'/145'/0'`), if the export carries one. */
+  bch(): BchAccountView | undefined {
+    const entry = this.raw.entries.find((e) => classify(e.path) === 'bch');
+    return entry ? new BchAccountView(entry, this.resolveXfp(entry)) : undefined;
   }
 
   /** The TON account (linked via the Tonkeeper-style `crypto-hdkey` export). */

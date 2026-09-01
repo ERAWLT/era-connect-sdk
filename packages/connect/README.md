@@ -83,16 +83,10 @@ today and speaks the rest through the same primitives.
 | Cosmos (~35 networks incl. Ethermint) | `cosmos-sign-request` / `evm-sign-request` | ADR-036 | `@hwlt/era-connect/cosmos` |
 | XRP | `ur:bytes` (XRP Toolkit convention) | — | `@hwlt/era-connect/xrp` |
 | Litecoin, Dogecoin, Dash | `crypto-psbt-extend` (same flow as Bitcoin) | — | `@hwlt/era-connect/btc` |
+| Bitcoin Cash | structured envelope (FORKID signing, CashAddr) | — | `@hwlt/era-connect/bch` |
 
-**Also supported by the device** — usable today via `era.raw` +
-`era.scanner({expectedTypes})`, dedicated modules on the roadmap (order driven
-by integrator demand):
-
-| Chain | Wire type | Module status |
-|---|---|---|
-| Bitcoin Cash | structured envelope (FORKID signing) | planned |
-
-Two things make the gap workable now: **linking already surfaces every account
+Every chain the current device firmware ships now has a dedicated module.
+Two things keep future additions workable: **linking already surfaces every account
 the device exports** (unknown chains still carry their path, fingerprint and
 public key), and the scanner/fountain layer is chain-agnostic. The device's
 chain list keeps growing — confirm the current set with the ERA team.

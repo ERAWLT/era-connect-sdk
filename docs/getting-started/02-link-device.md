@@ -60,6 +60,9 @@ sol[0].path;                     // each entry IS a signer
 
 const tron = accounts.tron()!;
 tron.deriveAddress(0);           // 'T…'
+
+const bch = accounts.bch()!;     // m/44'/145'/0'
+bch.deriveAddress(0);            // bare CashAddr ('q…')
 ```
 
 **Persist `accounts.sourceUr`** (the raw UR string) — re-parse it any time you

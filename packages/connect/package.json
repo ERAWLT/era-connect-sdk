@@ -35,6 +35,7 @@
     "proto",
     "evm",
     "btc",
+    "bch",
     "solana",
     "xrp",
     "cosmos",
@@ -83,6 +84,17 @@
       "require": {
         "types": "./dist/btc.d.cts",
         "default": "./dist/btc.cjs"
+      }
+    },
+    "./bch": {
+      "react-native": "./dist/bch.js",
+      "import": {
+        "types": "./dist/bch.d.ts",
+        "default": "./dist/bch.js"
+      },
+      "require": {
+        "types": "./dist/bch.d.cts",
+        "default": "./dist/bch.cjs"
       }
     },
     "./solana": {

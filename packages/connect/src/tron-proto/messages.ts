@@ -82,6 +82,90 @@ export function encodeSignRequestProto(req: TronSignRequestProto): Uint8Array {
     .finish();
 }
 
+export interface BchProtoInput {
+  /** Display-order (big-endian) txid, 64 hex chars — a STRING on the wire. */
+  readonly txidHex: string;
+  readonly index: number;
+  /** UTXO value in satoshis. */
+  readonly value: bigint;
+  /** Compressed public key, 66 hex chars — a STRING on the wire. */
+  readonly publicKeyHex: string;
+  /** Full derivation path of the key that owns the UTXO. */
+  readonly ownerKeyPath: string;
+}
+
+export interface BchProtoOutput {
+  /** CashAddr (verbatim; the device accepts both prefixed and bare form). */
+  readonly address: string;
+  readonly value: bigint;
+  readonly isChange: boolean;
+  readonly changeAddressPath?: string | undefined;
+}
+
+export interface BchSignRequestProto {
+  /** Lowercase, ZERO-PADDED 8-hex source fingerprint (the wire demands the string form). */
+  readonly xfpHex: string;
+  /** Hyphenated UUID string; echoed by the device as the only reply binding. */
+  readonly signId: string;
+  readonly timestamp: number;
+  /** Fee in satoshis — shown on the device; MUST equal inputs minus outputs. */
+  readonly fee: bigint;
+  readonly dustThreshold: number;
+  readonly memo?: string | undefined;
+  readonly inputs: readonly BchProtoInput[];
+  readonly outputs: readonly BchProtoOutput[];
+}
+
+/**
+ * The BCH leg of the same envelope: `Base -> Payload -> SignTransaction ->
+ * BchTx` at oneof tag 10, with FLAT inputs (value/publicKey are direct
+ * fields, no nested Utxo sub-message). Unlike the Tron writer, default
+ * values are OMITTED here — proto3 emission, which is what the reference
+ * wallet capture the firmware fixture pins does. `hdPath` (SignTransaction
+ * field 3) is deliberately absent: the reference never sends it and the
+ * device reads the per-input `ownerKeyPath` instead.
+ */
+export function encodeBchSignRequestProto(req: BchSignRequestProto): Uint8Array {
+  const bchTx = new ProtoWriter();
+  if (req.fee !== 0n) bchTx.varintField(1, req.fee);
+  if (req.dustThreshold !== 0) bchTx.varintField(2, req.dustThreshold);
+  if (req.memo !== undefined && req.memo !== '') bchTx.stringField(3, req.memo);
+  for (const input of req.inputs) {
+    const w = new ProtoWriter().stringField(1, input.txidHex);
+    if (input.index !== 0) w.varintField(2, input.index);
+    if (input.value !== 0n) w.varintField(3, input.value);
+    w.stringField(4, input.publicKeyHex);
+    w.stringField(5, input.ownerKeyPath);
+    bchTx.messageField(4, w.finish());
+  }
+  for (const output of req.outputs) {
+    const w = new ProtoWriter().stringField(1, output.address);
+    if (output.value !== 0n) w.varintField(2, output.value);
+    if (output.isChange) w.varintField(3, 1);
+    if (output.changeAddressPath !== undefined && output.changeAddressPath !== '') {
+      w.stringField(4, output.changeAddressPath);
+    }
+    bchTx.messageField(5, w.finish());
+  }
+
+  const signTx = new ProtoWriter().stringField(1, 'BCH').stringField(2, req.signId);
+  if (req.timestamp !== 0) signTx.varintField(4, req.timestamp);
+  signTx.varintField(5, 8); // decimal: BCH is always 8
+  signTx.messageField(10, bchTx.finish());
+
+  const payload = new ProtoWriter()
+    .varintField(1, PAYLOAD_TYPE_SIGN_TX)
+    .stringField(2, req.xfpHex)
+    .messageField(4, signTx.finish())
+    .finish();
+
+  return new ProtoWriter()
+    .varintField(1, 2) // Base.version
+    .stringField(2, 'QrCode Protocol')
+    .messageField(3, payload)
+    .finish();
+}
+
 export interface TronSignResultProto {
   readonly signId: string;
   readonly txId: string;
