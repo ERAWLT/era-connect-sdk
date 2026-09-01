@@ -7,6 +7,42 @@ on:
   workflow_dispatch:
 
 jobs:
+  # Build/lint/package checks run ONCE on a toolchain-supported Node: tsdown
+  # 0.22+ (and its dts pipeline) requires Node ^22.18, while the PACKAGE
+  # itself targets es2020 — what needs the matrix is the tests, not the build.
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          # pnpm 11 needs Node >= 22.13 itself; the standalone binary bundles
+          # its own runtime.
+          standalone: true
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec biome ci .
+      - run: pnpm --filter @hwlt/era-connect typecheck
+      - run: pnpm --filter @hwlt/era-connect build
+      # Guard the exports map — a regression here breaks Metro/Node resolution silently.
+      - run: pnpm exec publint
+        working-directory: packages/connect
+      - run: pnpm exec attw --pack .
+        working-directory: packages/connect
+      - name: Pack artifact for manual smoke installs
+        run: pnpm pack --out era-connect.tgz
+        working-directory: packages/connect
+      - uses: actions/upload-artifact@v4
+        with:
+          name: npm-tarball
+          path: packages/connect/era-connect.tgz
+          if-no-files-found: error
+
+  # The package runs wherever its engines say — exercise the test suite on
+  # every supported Node line.
   test:
     runs-on: ubuntu-latest
     strategy:
@@ -16,33 +52,13 @@ jobs:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
         with:
-          # pnpm 11 needs Node >= 22.13 itself; the standalone binary bundles
-          # its own runtime so the MATRIX Node (20/22) only runs the tests.
           standalone: true
       - uses: actions/setup-node@v6
         with:
           node-version: ${{ matrix.node }}
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - run: pnpm exec biome ci .
-      - run: pnpm --filter @hwlt/era-connect typecheck
       - run: pnpm --filter @hwlt/era-connect test
-      - run: pnpm --filter @hwlt/era-connect build
-      # Guard the exports map — a regression here breaks Metro/Node resolution silently.
-      - run: pnpm exec publint
-        working-directory: packages/connect
-      - run: pnpm exec attw --pack .
-        working-directory: packages/connect
-      - name: Pack artifact for manual smoke installs
-        if: matrix.node == 22
-        run: pnpm pack --out era-wallet-connect.tgz
-        working-directory: packages/connect
-      - uses: actions/upload-artifact@v4
-        if: matrix.node == 22
-        with:
-          name: npm-tarball
-          path: packages/connect/era-wallet-connect.tgz
-          if-no-files-found: error
 
   nightly-fuzz:
     # Longer property-test runs; trigger manually (add `schedule:` once the
@@ -53,8 +69,6 @@ jobs:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
         with:
-          # pnpm 11 needs Node >= 22.13 itself; the standalone binary bundles
-          # its own runtime so the MATRIX Node (20/22) only runs the tests.
           standalone: true
       - uses: actions/setup-node@v6
         with:
