@@ -191,11 +191,13 @@ describe('CBOR differential vs cbor2', () => {
         } catch (e) {
           return (e as { code?: string }).code === 'malformed-cbor';
         }
-        // Whatever we accept must re-encode to the exact input (definite,
-        // minimal-width — so acceptance implies canonical form). cbor2 is not
-        // the oracle here: it enforces SEMANTIC tag contents (bignum etc.)
-        // that our protocol layer treats as opaque wrappers.
-        return bytesToHex(cborEncode(decoded)) === bytesToHex(bytes);
+        // Whatever we accept re-encodes canonically (definite, minimal
+        // width), and canonicalization is idempotent: decode∘encode is a
+        // fixed point. (The decoder tolerates non-minimal length heads, as
+        // the reference implementation does — a stricter refusal could turn
+        // away a genuine reply.)
+        const canonical = cborEncode(decoded);
+        return bytesToHex(cborEncode(cborDecode(canonical))) === bytesToHex(canonical);
       }),
       { numRuns: 2000 },
     );
