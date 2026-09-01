@@ -1,0 +1,9 @@
+ERA Connect SDK
+Copyright 2026 ERA Wallet
+
+This product includes Protocol Buffers schema definitions for the Tron
+signing envelope (packages/connect/proto/tron/) that are derived from the
+QR code data protocol published by Keystone (https://github.com/KeystoneHQ,
+Apache License 2.0) and reference message shapes from the TRON protocol
+(https://github.com/tronprotocol/protocol, Apache License 2.0 / LGPL-3.0
+documentation headers as published).
