@@ -35,7 +35,10 @@ jobs:
           publish: pnpm changeset publish && git push --follow-tags
           title: 'Version packages'
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # A fine-grained PAT (contents + pull-requests: write): the org
+          # policy does not let the default GITHUB_TOKEN create pull
+          # requests, and PATs are exempt from that restriction.
+          GITHUB_TOKEN: ${{ secrets.CHANGESETS_TOKEN || secrets.GITHUB_TOKEN }}
           # No NPM_TOKEN: publishing uses npm trusted publishing (OIDC).
           # One-time setup: after the first (manual) publish of 0.1.0, register
           # this repository + workflow as a Trusted Publisher on npmjs.com for
