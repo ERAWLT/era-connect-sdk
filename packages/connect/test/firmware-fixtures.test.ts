@@ -24,6 +24,7 @@ import { UrDecoder } from '../src/ur/decoder';
 import { verifyCardanoSignature } from '../src/verify/cardano';
 import { parsePsbt } from '../src/verify/psbt-reader';
 import { verifyTonSignature } from '../src/verify/ton';
+import { verifyXrpSignature } from '../src/verify/xrp';
 
 /**
  * LOCAL-ONLY cross-check against a device-firmware signing-fixture corpus:
@@ -37,6 +38,13 @@ import { verifyTonSignature } from '../src/verify/ton';
  * the EVM key-6 address, the Solana key-4 pubkey — reflect other derivation
  * schemes and are deliberately not the oracle.)
  */
+/** Loose ASCII decode for fixture JSON payloads. */
+function utf8DecodeLoose(bytes: Uint8Array): string {
+  let out = '';
+  for (const b of bytes) out += String.fromCharCode(b);
+  return out;
+}
+
 const dir = process.env.ERA_FIRMWARE_FIXTURES_DIR;
 const enabled = dir !== undefined && existsSync(dir);
 
@@ -285,6 +293,74 @@ describe.skipIf(!enabled)('firmware fixture corpus (local, env-gated)', () => {
       checked += 1;
     }
     expect(checked).toBeGreaterThanOrEqual(4);
+  });
+
+  it('the real XRP reply verifies through the STObject walker (gold vector)', () => {
+    const { cases } = JSON.parse(readFileSync(join(dir!, 'xrp.json'), 'utf8')) as {
+      cases: FixtureCase[];
+    };
+    let checked = 0;
+    for (const c of cases) {
+      const request = decodeUrText(c.ur);
+      const reply = decodeUrText(c.expected_signature);
+      if (!request || !reply) continue;
+      expect(request.type).toBe('bytes');
+      const txJson = JSON.parse(utf8DecodeLoose(asBytes(cborDecode(request.cbor))!)) as {
+        SigningPubKey: string;
+      };
+      const signedTx = asBytes(cborDecode(reply.cbor))!;
+      const result = verifyXrpSignature({
+        signedTx,
+        expectedSigningPubKey: txJson.SigningPubKey,
+      });
+      expect(result.ok, `${c.name}: ${!result.ok ? result.reason : ''}`).toBe(true);
+      expect('checked' in result && result.checked).toBe(true);
+      checked += 1;
+    }
+    expect(checked).toBeGreaterThanOrEqual(1);
+  });
+
+  it('cosmos and sui corpus requests decode into the expected shapes', () => {
+    const cosmos = JSON.parse(readFileSync(join(dir!, 'cosmos.json'), 'utf8')) as {
+      cases: FixtureCase[];
+    };
+    let cosmosChecked = 0;
+    for (const c of cosmos.cases) {
+      const request = decodeUrText(c.ur);
+      if (!request) continue;
+      expect(['cosmos-sign-request', 'evm-sign-request']).toContain(request.type);
+      const map = cborDecode(request.cbor);
+      expect(asBytes(mapGet(map, 2))!.length).toBeGreaterThan(0);
+      cosmosChecked += 1;
+    }
+    expect(cosmosChecked).toBeGreaterThanOrEqual(30);
+
+    const sui = JSON.parse(readFileSync(join(dir!, 'sui.json'), 'utf8')) as {
+      cases: FixtureCase[];
+    };
+    for (const c of sui.cases) {
+      const request = decodeUrText(c.ur);
+      if (!request) continue;
+      expect(request.type).toBe('sui-sign-request');
+      expect(asBytes(mapGet(cborDecode(request.cbor), 2))!.length).toBeGreaterThan(0);
+    }
+  });
+
+  it('the dogecoin psbt-extend request rebuilds byte-for-byte', async () => {
+    const { EraConnect } = await import('../src/index');
+    const { cases } = JSON.parse(readFileSync(join(dir!, 'dogecoin.json'), 'utf8')) as {
+      cases: FixtureCase[];
+    };
+    for (const c of cases) {
+      const request = decodeUrText(c.ur);
+      if (!request || request.type !== 'crypto-psbt-extend') continue;
+      const map = cborDecode(request.cbor);
+      const psbt = asBytes(mapGet(map, 1))!;
+      const coinId = Number(asUint(mapGet(map, 2)));
+      expect(coinId).toBe(3); // DOGE
+      const rebuilt = new EraConnect().btc.generatePsbtSignRequest({ psbt, coin: 'doge' });
+      expect(bytesToHex(rebuilt.ur.cbor)).toBe(bytesToHex(request.cbor));
+    }
   });
 
   it('the tron rawData corpus round-trips: layouts, reply frame, txid, caps', () => {

@@ -13,12 +13,22 @@ import {
   evmAddressFromPublicKey,
   serializeExtendedPublicKey,
   solanaAddressFromPublicKey,
+  suiAddressFromPublicKey,
   tronAddressFromPublicKey,
   ZPUB_VERSION,
 } from './derive';
 
 /** Chain family of an exported account, matched by its derivation path — never by the note label. */
-export type AccountChain = 'evm' | 'btc' | 'solana' | 'tron' | 'ton' | 'cardano' | 'unknown';
+export type AccountChain =
+  | 'evm'
+  | 'btc'
+  | 'solana'
+  | 'tron'
+  | 'ton'
+  | 'cardano'
+  | 'sui'
+  | 'cosmos'
+  | 'unknown';
 
 export interface AccountKey {
   readonly chain: AccountChain;
@@ -58,6 +68,8 @@ function classify(path: readonly PathLevel[]): AccountChain {
   if (p0.index === 44 && p1.index === 195) return 'tron';
   if (p0.index === 44 && p1.index === 607) return 'ton';
   if (p0.index === 1852 && p1.index === 1815) return 'cardano';
+  if (p0.index === 44 && p1.index === 784) return 'sui';
+  if (p0.index === 44 && p1.index === 118) return 'cosmos';
   return 'unknown';
 }
 
@@ -284,6 +296,31 @@ export class CardanoAccountView {
   }
 }
 
+/** Sui view: like Solana, each fully-hardened exported entry IS a signer. */
+export class SuiAccountView {
+  constructor(
+    private readonly entry: RawAccountEntry,
+    private readonly resolvedXfp: number,
+  ) {}
+
+  get xfp(): string {
+    return xfpToHex(this.resolvedXfp);
+  }
+
+  get path(): string {
+    return formatPath([...this.entry.path]);
+  }
+
+  get publicKey(): Uint8Array {
+    return requireKey(this.entry, 32);
+  }
+
+  /** `0x` Sui address: BLAKE2b-256 of `0x00 || publicKey`. */
+  get address(): string {
+    return suiAddressFromPublicKey(requireKey(this.entry, 32));
+  }
+}
+
 /**
  * Solana view: Ed25519 has no public child derivation, so the device
  * pre-derives hardened accounts (`m/44'/501'/idx'`) and each entry IS a
@@ -422,6 +459,13 @@ export class EraAccounts {
       (e) => classify(e.path) === 'ton' && e.publicKey?.length === 32,
     );
     return entry ? new TonAccountView(entry, this.resolveXfp(entry)) : undefined;
+  }
+
+  /** All exported Sui signers (fully hardened SLIP-10 entries). */
+  sui(): SuiAccountView[] {
+    return this.raw.entries
+      .filter((e) => classify(e.path) === 'sui' && e.publicKey?.length === 32)
+      .map((e) => new SuiAccountView(e, this.resolveXfp(e)));
   }
 
   /** The Cardano account (CIP-1852 Icarus export), if the export carries one. */

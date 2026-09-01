@@ -51,6 +51,23 @@ outputs, amounts, txid), no finalized script fields the device did not receive,
 every input signed (pass `requireEveryInputSigned: false` for dApp `signPsbt`
 hand-backs where some inputs are not yours).
 
+## 1a-bis. Litecoin, Dogecoin, Dash — same PSBT flow
+
+The Bitcoin-family coins ride the SAME code path via `crypto-psbt-extend`
+(the PSBT plus a coin id, answered in kind). Build the PSBT with the coin's
+own derivation paths and pass `coin`:
+
+```ts
+const request = era.btc.generatePsbtSignRequest({ psbt, coin: 'ltc' }); // 'doge' | 'dash'
+```
+
+Everything else — the signed-not-finalized reply, `verifySignedPsbt` as the
+mandatory binding, finalize + broadcast with your own stack — is identical.
+Linked account paths: LTC `m/84'/2'/0'`, DOGE `m/44'/3'/0'`, DASH `m/44'/5'/0'`
+(`accounts.keys` carries them; they classify as `btc`-family by path).
+Bitcoin Cash is NOT offered on this path — its FORKID sighash needs the
+device's structured envelope, which this SDK does not emit yet.
+
 ## 1b. Messages
 
 **The device signs messages for legacy P2PKH (`1…`) addresses only** — use

@@ -1,0 +1,6 @@
+{
+  "main": "../dist/cosmos.cjs",
+  "module": "../dist/cosmos.js",
+  "types": "../dist/cosmos.d.ts",
+  "react-native": "../dist/cosmos.js"
+}
