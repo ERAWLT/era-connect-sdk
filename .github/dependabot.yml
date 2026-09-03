@@ -10,6 +10,16 @@ updates:
         patterns: ['@biomejs/*', 'publint', '@arethetypeswrong/*', 'tsdown', 'vitest', 'typescript']
       runtime:
         patterns: ['@noble/*', '@scure/*', 'fflate']
+    ignore:
+      # The demo's versions are chosen by its Expo SDK, not by semver — bumping
+      # them one at a time produces combinations Expo never ships. It moves when
+      # the SDK does, as one deliberate upgrade.
+      - dependency-name: expo
+      - dependency-name: expo-*
+      - dependency-name: react-native
+      - dependency-name: react-native-*
+      - dependency-name: react
+      - dependency-name: '@types/react'
   - package-ecosystem: github-actions
     directory: /
     schedule:
