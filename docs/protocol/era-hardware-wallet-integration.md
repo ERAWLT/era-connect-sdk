@@ -77,13 +77,15 @@ This guide documents **EVM chains** (Ethereum and all EVM-compatible networks),
 | Chain | Sign tx | Sign message |
 |---|---|---|
 | EVM (Ethereum + all EVM chains) | ✅ `eth-sign-request` | ✅ personal_sign / EIP-712 |
-| Bitcoin | ✅ `crypto-psbt` (PSBT v0) | ✅ legacy P2PKH only |
+| Bitcoin | ✅ `crypto-psbt` (PSBT v0) | ✅ BIP-44 / 49 / 84 on firmware 2.1.0+, legacy P2PKH on older (see [§5](#5-device-specifics-vs-the-keystone-standard)) |
 | Solana | ✅ `sol-sign-request` | ✅ |
 | Tron | ✅ `keystone-sign-request` | ⚠️ UTF-8 bytes in the same `keystone-sign-request` `rawData` (no separate message type) |
 
-> The device's set of supported blockchains keeps growing — the chains above are what this
-> guide covers. **Confirm the current full list with the ERA team when you start your
-> integration.**
+> The four families above are the ones this guide walks through end to end. The device
+> also signs for TON, Cardano, Sui, Cosmos, XRP, Bitcoin Cash and the Litecoin / Dogecoin /
+> Dash PSBT variants: their wire types and derivation paths are in
+> [§7 Reference tables](#7-reference-tables), and `@hwlt/era-connect` implements and tests
+> all eleven.
 
 You only need a CBOR codec, a UR codec, an animated-QR encoder/decoder and a camera.
 Everything else is standard chain tooling (RLP, PSBT, Solana message, Tron protobuf).

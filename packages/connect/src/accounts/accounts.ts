@@ -138,8 +138,10 @@ export type BtcPurpose = 44 | 49 | 84 | 86;
 /**
  * Bitcoin view over one exported account. The default is the BIP-84
  * native-segwit account; pass `purpose` to reach the other script types the
- * device exports (44 = legacy P2PKH — the kind the device signs MESSAGES for,
- * 49 = nested segwit, 86 = taproot).
+ * device exports (44 = legacy P2PKH, 49 = nested segwit, 84 = native segwit,
+ * 86 = taproot). Message signing covers 44/49/84 on firmware 2.1.0+ and
+ * legacy P2PKH alone on older firmware; Taproot is never message-signable
+ * (BIP-137 has no header range for it).
  */
 export class BtcAccountView {
   constructor(

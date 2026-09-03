@@ -90,8 +90,8 @@ chain family the current firmware supports.
 Every chain the current device firmware ships now has a dedicated module.
 Two things keep future additions workable: **linking already surfaces every account
 the device exports** (unknown chains still carry their path, fingerprint and
-public key), and the scanner/fountain layer is chain-agnostic. The device's
-chain list keeps growing — confirm the current set with the ERA team.
+public key), and the scanner/fountain layer is chain-agnostic — `era.raw` plus
+`era.scanner({ expectedTypes })` speak any UR type the device learns next.
 
 ## Documentation
 
