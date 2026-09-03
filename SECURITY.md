@@ -7,9 +7,10 @@ Please report anything you find privately.
 
 ## Reporting a vulnerability
 
-Email **security@hwlt.io**. If GitHub's private vulnerability reporting is
-enabled on this repository (**Security → Report a vulnerability**), that works
-too and keeps the thread on GitHub.
+Use GitHub's private vulnerability reporting on this repository
+(**Security → Report a vulnerability**), which keeps the whole thread private
+until a fix ships. If you would rather use email, write to
+**technical@hwlt.io**.
 
 Please include the package version, a minimal reproduction, and what an
 attacker gains. We aim to acknowledge within 3 working days and to ship a fix
