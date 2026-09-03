@@ -38,7 +38,7 @@ jobs:
       - name: Pack artifact for manual smoke installs
         run: pnpm pack --out era-connect.tgz
         working-directory: packages/connect
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: npm-tarball
           path: packages/connect/era-connect.tgz
