@@ -1,7 +1,7 @@
 # ERA Connect SDK — Documentation
 
 Integrate the **ERA hardware wallet** into your software wallet over
-air-gapped animated QR codes. Five steps, ten chain families, one SDK.
+air-gapped animated QR codes. Five steps, eleven chain families, one SDK.
 
 ## Getting started (read in order — ~15 minutes to a working signature)
 
@@ -31,7 +31,6 @@ and the scanner — see the
 
 ## Advanced
 
-- [Device specifics](advanced/device-specifics.md) — exact deviations from the Keystone registry, and why
 - [Verification](advanced/verification.md) — "did the device sign exactly what I sent?"
 - [QR tuning](advanced/qr-tuning.md) — fragment sizes, frame rates, progress and timeouts
 - [Key derivation calls](advanced/key-derivation-call.md) — the wallet asks the device for specific paths
@@ -41,5 +40,8 @@ and the scanner — see the
 ## Protocol
 
 [`protocol/era-hardware-wallet-integration.md`](protocol/era-hardware-wallet-integration.md)
-is the normative wire specification (UR/CBOR layouts, per-chain byte formats).
-The SDK encodes it; the spec is what you implement if you cannot use the SDK.
+describes the wire formats (UR/CBOR layouts, per-chain byte formats) for
+implementing without the SDK. It carries full walkthroughs for EVM, Bitcoin,
+Solana and Tron; the reference tables in its §7 cover every UR type the device
+speaks, and the per-chain guides above are the current source for the rest.
+The SDK itself implements and tests all eleven families.

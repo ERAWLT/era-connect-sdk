@@ -16,10 +16,9 @@ import {
   cbText,
   cbUint,
   mapGet,
-  stripTags,
 } from '../src/cbor/model';
 import { parseWitnessSet } from '../src/chains/cardano';
-import { bytesToHex, utf8Encode } from '../src/core/bytes';
+import { bytesToHex } from '../src/core/bytes';
 import { EraConnect, type EraSdkError, Ur } from '../src/index';
 import { firstArrayItemBytes, verifyCardanoSignature } from '../src/verify/cardano';
 import { derivePath, extendedSign, icarusMasterFromEntropy, publicKeyOf } from './helpers/icarus';

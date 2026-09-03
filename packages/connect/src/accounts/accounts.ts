@@ -10,12 +10,14 @@ import {
   btcP2pkhAddressFromPublicKey,
   btcP2wpkhAddressFromPublicKey,
   cardanoSoftDerivePath,
+  cosmosAddressFromPublicKey,
   derivePublicKey,
   evmAddressFromPublicKey,
   serializeExtendedPublicKey,
   solanaAddressFromPublicKey,
   suiAddressFromPublicKey,
   tronAddressFromPublicKey,
+  xrpAddressFromPublicKey,
   ZPUB_VERSION,
 } from './derive';
 
@@ -30,6 +32,7 @@ export type AccountChain =
   | 'cardano'
   | 'sui'
   | 'cosmos'
+  | 'xrp'
   | 'unknown';
 
 export interface AccountKey {
@@ -73,6 +76,7 @@ function classify(path: readonly PathLevel[]): AccountChain {
   if (p0.index === 1852 && p1.index === 1815) return 'cardano';
   if (p0.index === 44 && p1.index === 784) return 'sui';
   if (p0.index === 44 && p1.index === 118) return 'cosmos';
+  if (p0.index === 44 && p1.index === 144) return 'xrp';
   return 'unknown';
 }
 
@@ -398,6 +402,87 @@ export class SolanaAccountView {
   }
 }
 
+/**
+ * Cosmos view (`m/44'/118'/0'`): one secp256k1 account key, addresses derived
+ * at `0/index`. The bech32 PREFIX is the caller's — every zone spends the
+ * same key under its own HRP (`cosmos`, `osmo`, `celestia`, ...), so there is
+ * no correct default and `deriveAddress` requires one.
+ *
+ * Ethermint zones (Injective, Evmos, Dymension, ...) are the exception: they
+ * sign with `m/44'/60'` keys, so they come back as the `evm` account, not
+ * this one.
+ */
+export class CosmosAccountView {
+  constructor(
+    private readonly entry: RawAccountEntry,
+    private readonly resolvedXfp: number,
+  ) {}
+
+  get xfp(): string {
+    return xfpToHex(this.resolvedXfp);
+  }
+
+  get accountPath(): string {
+    return formatPath([...this.entry.path]);
+  }
+
+  /** Signing path for address `index`: `<account>/0/<index>`. */
+  pathFor(index: number): string {
+    return `${this.accountPath}/0/${index}`;
+  }
+
+  /** The compressed secp256k1 key at `0/index` — what a sign request's path names. */
+  derivePublicKey(index: number): Uint8Array {
+    return derivePublicKey(requireKey(this.entry, 33), withChainCode(this.entry), 0, index);
+  }
+
+  /** Bech32 address under the zone's own HRP, e.g. `{ prefix: 'osmo' }`. */
+  deriveAddress(index: number, options: { prefix: string }): string {
+    return cosmosAddressFromPublicKey(this.derivePublicKey(index), options.prefix);
+  }
+}
+
+/**
+ * XRP view (`m/44'/144'/0'`). The device signs with ONE key — the address at
+ * `0/0` — so `signingPath` names it, and the hex of `derivePublicKey(0)` is
+ * what an unsigned transaction's `SigningPubKey` must carry. `pathFor` is
+ * there for wallets that scan further addresses of the same account.
+ */
+export class XrpAccountView {
+  constructor(
+    private readonly entry: RawAccountEntry,
+    private readonly resolvedXfp: number,
+  ) {}
+
+  get xfp(): string {
+    return xfpToHex(this.resolvedXfp);
+  }
+
+  get accountPath(): string {
+    return formatPath([...this.entry.path]);
+  }
+
+  /** The only path the device signs with: `<account>/0/0`. */
+  get signingPath(): string {
+    return `${this.accountPath}/0/0`;
+  }
+
+  /** Signing path for address `index`: `<account>/0/<index>`. */
+  pathFor(index: number): string {
+    return `${this.accountPath}/0/${index}`;
+  }
+
+  /** The compressed secp256k1 key at `0/index`. */
+  derivePublicKey(index: number): Uint8Array {
+    return derivePublicKey(requireKey(this.entry, 33), withChainCode(this.entry), 0, index);
+  }
+
+  /** Classic `r...` address of the key at `0/index`. */
+  deriveAddress(index: number): string {
+    return xrpAddressFromPublicKey(this.derivePublicKey(index));
+  }
+}
+
 function extendedKeyOf(entry: RawAccountEntry, version?: number): string {
   const chainCode = withChainCode(entry);
   const publicKey = requireKey(entry, 33);
@@ -531,6 +616,18 @@ export class EraAccounts {
     return this.raw.entries
       .filter((e) => classify(e.path) === 'solana' && e.publicKey?.length === 32)
       .map((e) => new SolanaAccountView(e, this.resolveXfp(e)));
+  }
+
+  /** The Cosmos account (`m/44'/118'/0'`), if the export carries one. */
+  cosmos(): CosmosAccountView | undefined {
+    const entry = this.raw.entries.find((e) => classify(e.path) === 'cosmos');
+    return entry ? new CosmosAccountView(entry, this.resolveXfp(entry)) : undefined;
+  }
+
+  /** The XRP account (`m/44'/144'/0'`), if the export carries one. */
+  xrp(): XrpAccountView | undefined {
+    const entry = this.raw.entries.find((e) => classify(e.path) === 'xrp');
+    return entry ? new XrpAccountView(entry, this.resolveXfp(entry)) : undefined;
   }
 
   private entryFor(accountPath: string): RawAccountEntry {

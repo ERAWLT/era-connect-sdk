@@ -32,8 +32,7 @@ const accounts = scanner.parse();            // EraAccounts, same as normal link
 | `chainType` | – | Optional display hint |
 
 Compatibility note: the call is part of the shared registry and reserved by
-the device's UR table. Firmware releases roll support out progressively — a
-device that does not yet handle it simply does not respond (nothing on its
-screen changes). Treat a no-response within your scan timeout as "use normal
-sync linking instead", and confirm current firmware coverage with the ERA
-team when you plan a flow around this.
+the device's UR table, but not every firmware answers it. A device that does
+not handle it stays silent — nothing on its screen changes — so treat a
+no-response within your scan timeout as "fall back to normal sync linking"
+rather than as an error, and keep that fallback in the flow you ship.

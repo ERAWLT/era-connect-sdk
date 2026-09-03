@@ -15,6 +15,12 @@ The protocol is **compatible with the Keystone / Blockchain Commons UR standard*
 you can reuse existing open-source SDKs and only handle a small set of device-specific
 details (see [§5 Device specifics](#5-device-specifics-vs-the-keystone-standard)).
 
+**Scope.** [§4](#4-per-chain-signing) carries full walkthroughs for the four foundational
+families — EVM, Bitcoin, Solana and Tron. The remaining families (TON, Cardano, Sui,
+Cosmos, XRP, Bitcoin Cash and the Litecoin / Dogecoin / Dash PSBT variants) are covered by
+the reference tables in [§7](#7-reference-tables) plus the per-chain guides shipped with
+the `@hwlt/era-connect` SDK. The SDK implements and tests all eleven families.
+
 ---
 
 ## Table of contents
@@ -241,8 +247,8 @@ function onQrFrame(text: string) {
 ```dart
 // Dart
 final ur = UR.fromCbor(type: 'eth-sign-request', cbor: cborBytes);
-final encoder = UREncoder(ur, maxFragmentLength: 90);
-Timer.periodic(const Duration(milliseconds: 150), (_) {
+final encoder = UREncoder(ur, maxFragmentLength: 180);
+Timer.periodic(const Duration(milliseconds: 125), (_) {
   qrData.value = encoder.nextPart();   // drive a QR widget with this string
 });
 ```
@@ -253,8 +259,8 @@ import com.sparrowwallet.hummingbird.UR
 import com.sparrowwallet.hummingbird.UREncoder
 
 val ur = UR("eth-sign-request", cborBytes)
-val encoder = UREncoder(ur, /* maxFragmentLen */ 90, /* firstSeqNum */ 0)
-// every ~150ms:
+val encoder = UREncoder(ur, /* maxFragmentLen */ 180, /* firstSeqNum */ 0)
+// every ~125ms:
 val frame: String = encoder.nextPart()   // render `frame` as a QR
 ```
 
@@ -263,8 +269,8 @@ val frame: String = encoder.nextPart()   // render `frame` as a QR
 import URKit
 
 let ur = try! UR(type: "eth-sign-request", cbor: cborBytes)
-var encoder = UREncoder(ur, maxFragmentLen: 90)
-// every ~150ms:
+var encoder = UREncoder(ur, maxFragmentLen: 180)
+// every ~125ms:
 let frame = encoder.nextPart()           // render `frame` as a QR
 ```
 
@@ -273,10 +279,10 @@ let frame = encoder.nextPart()           // render `frame` as a QR
 import { UR, UREncoder } from '@ngraveio/bc-ur';
 
 const ur = new UR(Buffer.from(cborBytes), 'eth-sign-request');
-const encoder = new UREncoder(ur, /* maxFragmentLength */ 90);
+const encoder = new UREncoder(ur, /* maxFragmentLength */ 180);
 setInterval(() => {
   const frame = encoder.nextPart();      // render `frame` as a QR (uppercase)
-}, 150);
+}, 125);
 ```
 
 ### 1.4 `crypto-keypath` (tag 304)
@@ -485,6 +491,13 @@ Each subsection gives the request UR, the exact CBOR map, what goes into `signDa
 response UR, and how to assemble the result. Replace `idx` with the address index of the
 account you linked in [§2](#2-linking-importing-accounts).
 
+The four subsections below are the foundational families and are walked through in full.
+TON, Cardano, Sui, Cosmos, XRP, Bitcoin Cash and the Litecoin / Dogecoin / Dash PSBT
+variants are **not** walked through here: their UR types, `dataType` values and derivation
+paths are in [§7](#7-reference-tables), and the worked examples live in the per-chain
+guides shipped with the `@hwlt/era-connect` SDK. All eleven families are implemented and
+tested by that SDK.
+
 ### 4.1 EVM (Ethereum and EVM-compatible chains)
 
 **Request — `eth-sign-request`** (Keystone tag `401`,
@@ -492,7 +505,7 @@ account you linked in [§2](#2-linking-importing-accounts).
 
 | Key | Type | Meaning |
 |---|---|---|
-| `1` | bytes | `requestId` — 16-byte UUID (tag 37 or untagged; see §5) |
+| `1` | bytes | `requestId` — 16-byte UUID, a **bare** byte string on this chain (see [§5](#5-device-specifics-vs-the-keystone-standard)) |
 | `2` | bytes | `signData` — RLP tx, or raw message bytes |
 | `3` | uint | `dataType` (see below) |
 | `4` | uint | `chainId` |
@@ -614,7 +627,7 @@ const req = EthSignRequest.constructETHRequest(
   address,                   // 0x...
   'My Wallet',
 );
-const ur = req.toUREncoder(/* maxFragmentLength */ 90); // drive the animated QR
+const ur = req.toUREncoder(/* maxFragmentLength */ 180); // drive the animated QR
 ```
 
 **Parse the response and assemble a signed EIP-1559 tx:**
@@ -739,20 +752,24 @@ const rawTxHex = psbt.extractTransaction().toHex();      // broadcast this
 
 | Key | Type | Meaning |
 |---|---|---|
-| `1` | bytes | `requestId` — UUID (tag 37 or untagged) |
+| `1` | bytes | `requestId` — UUID, **tag-37-wrapped** on this chain (see [§5](#5-device-specifics-vs-the-keystone-standard)) |
 | `2` | bytes | the message bytes |
 | `3` | uint | `dataType` = `1` (message) |
 | `4` | array | `[ crypto-keypath ]` — `m/84'/0'/0'/0/idx` |
 | `5` | array | `[ address ]` — the address string |
 | `6` | text | `origin` |
 
-Response — `btc-signature` (tag `8102`): map `{1: requestId, 2: signature}`. The
-signature is a [BIP-137](https://github.com/bitcoin/bips/blob/master/bip-0137.mediawiki)
-message signature; return it **base64**-encoded.
+Response — `btc-signature` (tag `8102`): map `{1: requestId, 2: signature}`, a
+[BIP-137](https://github.com/bitcoin/bips/blob/master/bip-0137.mediawiki) message
+signature. Firmware **2.1.0+** puts the **raw 65 bytes** (header ‖ r ‖ s) in key `2`;
+older firmware puts the **ASCII of its base64** there. Accept both, and hand dApps the
+base64 form.
 
-> **Messages: legacy P2PKH only.** The device's message signer supports legacy (`1...`)
-> addresses only and returns an **empty** signature for segwit (`bc1...`) addresses.
-> Detect the empty result and surface a clear error.
+> **Address kinds depend on the firmware generation.** Firmware **2.1.0+** signs
+> BIP-44 (`1...`), BIP-49 (`3...`) and BIP-84 (`bc1q...`) with the matching BIP-137
+> header and refuses only Taproot (`bc1p...`) — BIP-137 has no header range for it;
+> `xfp` is required. **Older firmware** signs legacy P2PKH only. Either way the refusal
+> is an **empty** signature in key `2` — detect it and surface a clear error.
 
 ### 4.3 Solana
 
@@ -761,7 +778,7 @@ message signature; return it **base64**-encoded.
 
 | Key | Type | Meaning |
 |---|---|---|
-| `1` | bytes | `requestId` — UUID (tag 37 or untagged) |
+| `1` | bytes | `requestId` — UUID, a **bare** byte string on this chain (see [§5](#5-device-specifics-vs-the-keystone-standard)) |
 | `2` | bytes | `signData` — the serialized Solana **message** (or raw message bytes) |
 | `3` | `crypto-keypath` (tag 304) | `m/44'/501'/idx'` + fingerprint |
 | `4` | bytes | signer Ed25519 public key (32 bytes) |
@@ -847,7 +864,7 @@ let ur = try KeystoneSDK().sol.generateSignRequest(solSignRequest: req)
 
 ### 4.4 Tron
 
-Tron signing uses a **proprietary structured request**: a gzip-compressed protobuf wrapped
+Tron signing uses a **structured, device-specific request**: a gzip-compressed protobuf wrapped
 in the `keystone-sign-request` UR (tag `6101`). The chain-generic `tron-sign-request`
 (tag `5101`) is reserved but **not active in current firmware**, so use the path below. It
 covers **any** Tron transaction: the protobuf's `rawData` field carries the ready-made
@@ -897,7 +914,8 @@ SignTransaction {
 > is present. Still always pass `latestBlock`: source it from a **live now-block** query
 > with the **full** 64-hex block id.
 
-The exact `.proto` is proprietary — request it from the ERA team. Tooling:
+The `.proto` schemas are shipped, not on request: `proto/tron/` inside the
+`@hwlt/era-connect` npm package (and in the SDK repository). Tooling:
 [protobuf](https://protobuf.dev/), [nanopb](https://github.com/nanopb/nanopb) (device side),
 TRON [`protocol/core`](https://github.com/tronprotocol/protocol/tree/master/core).
 
@@ -967,12 +985,12 @@ when building requests and parsing responses:
 
 | Area | Device behavior |
 |---|---|
-| `requestId` UUID | accepted **both** as a CBOR tag-37 wrapper (Keystone standard) **and** as a bare byte string — send either |
+| `requestId` UUID | the shape is **per chain**, not a free choice. Tag-37-wrapped on the request: Bitcoin messages, Cardano, Cosmos (incl. the Ethermint `evm-sign-request`), Sui, TON. Bare byte string on the request: EVM, Solana. TON is special — the value inside tag 37 is the **ASCII bytes of the hyphenated UUID string**, not the 16 raw bytes. Tron and Bitcoin Cash carry no CBOR request id at all: the id is the `signId` string inside the protobuf. Bitcoin PSBT and XRP carry none in either direction. On **replies** the device always wraps the echo in tag 37 — parse tag-agnostically (strip the tag, compare the bytes) |
 | EVM `dataType` | transactions use `1` (or `4`); EIP-1559 / EIP-2930 / legacy is detected from the leading RLP byte, not from `dataType` |
 | EVM `v` (legacy) | for legacy EIP-155 txs the device returns `v` **already** EIP-155-encoded (`parity + chainId·2 + 35`); do not re-apply the formula |
 | Bitcoin PSBT | `crypto-psbt` payload is a **bare CBOR byte string** (not a map); **use PSBT v0** (carries the global `UNSIGNED_TX` the signer relies on) |
-| Bitcoin messages | **legacy P2PKH only** (segwit returns an empty signature) |
-| Tron | uses the proprietary gzip-protobuf `keystone-sign-request` (`6101`) → `keystone-sign-result` (`6102`); the generic `tron-sign-request` (`5101`) is **not active** in current firmware. The signed bytes are the `rawData` field (ready-made `Transaction.raw_data`, signature = `sha256(rawData)`); the response returns `raw_data` unmodified |
+| Bitcoin messages | firmware **2.1.0+** signs BIP-44 / BIP-49 / BIP-84 addresses with the matching **BIP-137** header and refuses only Taproot (BIP-137 has no header range for it); `xfp` is required, and the reply carries the **raw 65-byte** signature. **Older firmware** signs **legacy P2PKH only**, answers a segwit address with an **empty signature**, and replies with the **ASCII of a base64 string**. Accept both reply shapes |
+| Tron | uses the structured gzip-protobuf `keystone-sign-request` (`6101`) → `keystone-sign-result` (`6102`); the generic `tron-sign-request` (`5101`) is **not active** in current firmware. The signed bytes are the `rawData` field (ready-made `Transaction.raw_data`, signature = `sha256(rawData)`); the response returns `raw_data` unmodified |
 | UR type on the wire | rendered **uppercase** (`UR:ETH-SIGN-REQUEST/...`); parse case-insensitively |
 | `origin` | a free-form label shown for context; not security-relevant |
 
@@ -1020,9 +1038,18 @@ revalidate the recipient and calldata client-side before display — see [§9](#
 | `crypto-keypath` | derivation path (nested) | — | `304` |
 | `eth-sign-request` | EVM tx / message | `eth-signature` (`402`) | `401` |
 | `crypto-psbt` | BTC tx (PSBT) | `crypto-psbt` (`310`) | `310` |
+| `crypto-psbt-extend` | LTC / DOGE / DASH tx — map `{1: PSBT, 2: coin id}`, LTC `2`, DOGE `3`, DASH `5` | `crypto-psbt-extend` (plain `crypto-psbt` is also answered) | device extension — **no** BCR/Keystone registry tag |
 | `btc-sign-request` | BTC message | `btc-signature` (`8102`) | `8101` |
 | `sol-sign-request` | Solana tx / message | `sol-signature` (`1102`) | `1101` |
-| `keystone-sign-request` | Tron tx (any contract via `rawData`) / message | `keystone-sign-result` (`6102`) | `6101` |
+| `keystone-sign-request` | Tron tx (any contract via `rawData`) / message; **Bitcoin Cash rides the same envelope** (coin code `"BCH"`, a `BchTx` protobuf) | `keystone-sign-result` (`6102`) | `6101` |
+| `ton-sign-request` | TON tx (BoC) / TON Connect proof | `ton-signature` (`7202`) | `7201` |
+| `cardano-sign-request` | Cardano tx (returns a witness set) | `cardano-signature` (`2203`) | `2202` |
+| `sui-sign-request` | Sui BCS intent message | `sui-signature` (`7102`) | `7101` |
+| `sui-sign-hash-request` | Sui 32-byte digest, carried as a **hex string** | `sui-signature` (`7102`) | `7103` |
+| `cosmos-sign-request` | Cosmos SignDoc | `cosmos-signature` (`4102`) | `4101` |
+| `evm-sign-request` | Cosmos/Ethermint SignDoc (keccak-256 zones) | `evm-signature` (`4102`) | `4101` |
+| `bytes` | XRP tx JSON — untyped `ur:bytes` **both** directions, no registry tag, no request id | `bytes` (signed XRPL binary) | — |
+| `qr-hardware-call` | ask the device for specific derivations (pull-model linking) | `crypto-multi-accounts` (`1103`) | `1201` |
 
 ### 7.2 `dataType` / `signType`
 
@@ -1032,6 +1059,12 @@ revalidate the recipient and calldata client-side before display — see [§9](#
 | BTC | `dataType` (key 3) | `1` message |
 | Solana | `signType` (key 7) | (omitted) tx, `2` off-chain message |
 | Tron | — | no `dataType`; the tx is a gzip protobuf inside `keystone-sign-request`, the signed bytes live in the `rawData` field; a (UTF-8) message travels in the same `rawData` |
+| BCH | — | no `dataType`; the `BchTx` protobuf sits at field `10` of `SignTransaction` (coin code `"BCH"`), where Tron's `TronTx` sits at field `8` |
+| Cosmos | `dataType` (key 3) | `1` Amino JSON SignDoc, `2` Direct (protobuf) SignDoc, `3` Textual, `4` ADR-036 message. The Ethermint `evm-sign-request` **remaps on the wire** — Amino → `2`, Direct → `3`; nothing else is accepted on that shape |
+| Cardano | — | no `dataType`; `signData` (key 2) is the **full** tx CBOR array `[body, witness_set, is_valid, aux_data]` — the device extracts the body and signs its BLAKE2b-256 hash |
+| Sui | — | no `dataType`; the request **type** carries it: `sui-sign-request` = BCS intent message (bytes), `sui-sign-hash-request` = a 32-byte digest as a hex string |
+| TON | `dataType` (key 3) | `1` transaction (BoC; the device signs the root cell's representation hash), `2` TON Connect proof (`sha256(0xFFFF ‖ "ton-connect" ‖ sha256(signData))`) |
+| XRP | — | none; the request payload is the transaction JSON, the reply the canonical signed XRPL binary |
 
 ### 7.3 Derivation paths / SLIP-44
 
@@ -1041,6 +1074,15 @@ revalidate the recipient and calldata client-side before display — see [§9](#
 | EVM | `m/44'/60'/0'` | `60` | `0/idx` |
 | Tron | `m/44'/195'/0'` | `195` | `0/idx` |
 | Solana | `m/44'/501'/idx'` | `501` | (account path *is* the signer) |
+| Bitcoin Cash | `m/44'/145'/0'` | `145` | `0/idx` receive, `1/idx` change |
+| Litecoin | `m/84'/2'/0'` | `2` | `0/idx` receive, `1/idx` change |
+| Dogecoin | `m/44'/3'/0'` | `3` | `0/idx` receive, `1/idx` change |
+| Dash | `m/44'/5'/0'` | `5` | `0/idx` receive, `1/idx` change |
+| TON | `m/44'/607'/0'` | `607` | (account path *is* the signer; the wallet-contract version changes only the address) |
+| Cardano | `m/1852'/1815'/0'` | `1815` | `0/idx` payment, `2/0` stake (CIP-1852) |
+| Sui | `m/44'/784'/0'/0'/0'` | `784` | fully hardened (SLIP-10 Ed25519) |
+| Cosmos | `m/44'/118'/0'` | `118` | `0/idx`; Ethermint zones (INJ, EVMOS, DYM) use `m/44'/60'` |
+| XRP | `m/44'/144'/0'` | `144` | `0/0` — the device always signs with `m/44'/144'/0'/0/0` |
 
 ---
 

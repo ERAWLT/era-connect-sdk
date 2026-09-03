@@ -1,8 +1,7 @@
 packages:
   - packages/*
   - examples/*
-allowBuilds:
-  esbuild: false
-
+# esbuild ships a platform binary and needs its install script to run;
+# everything else stays blocked (pnpm's default).
 onlyBuiltDependencies:
   - esbuild

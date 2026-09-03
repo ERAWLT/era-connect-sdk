@@ -198,7 +198,7 @@ export function parseWitnessSet(witnessSet: Uint8Array): CardanoWitness[] {
     }
     const vkey = asBytes(pair.items[0]);
     const signature = asBytes(pair.items[1]);
-    if (!vkey || vkey.length !== 32 || !signature || signature.length !== 64) {
+    if (vkey?.length !== 32 || !signature || signature.length !== 64) {
       throw new EraSdkError(
         'malformed-reply',
         'vkey witness is not [32-byte key, 64-byte signature]',

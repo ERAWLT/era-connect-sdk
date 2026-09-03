@@ -1,6 +1,6 @@
 syntax = "proto3";
 package protoc;
-option java_package = "com.cobo.cold.protobuf";
+option java_package = "com.keystone.cold.protobuf";
 option java_outer_classname = "SyncProtoc";
 
 message Account {

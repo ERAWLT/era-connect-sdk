@@ -220,3 +220,23 @@ describe('gzip reserved FLG bits (cross-SDK contract)', () => {
     }
   });
 });
+
+describe('UR type grammar (audit F5)', () => {
+  it('round-trips a type containing a digit', async () => {
+    const { Ur, parseUrString } = await import('../src/ur/ur');
+    // The constructor has always accepted [a-z][a-z0-9-]*; parseUrString used
+    // to accept only [a-z-]+, so a digit-bearing type could be built and then
+    // refused as not-a-ur on the way back in. No registry type in use today
+    // has a digit — this pins the grammar for the next one that does.
+    const ur = new Ur('sui2-sign-request', new Uint8Array([0xa0]));
+    const text = ur.toString();
+    const parsed = parseUrString(text);
+    expect(parsed.type).toBe('sui2-sign-request');
+    expect(parsed.payload).toEqual(ur.cbor);
+  });
+
+  it('still refuses a type that starts with a digit', async () => {
+    const { parseUrString } = await import('../src/ur/ur');
+    expect(() => parseUrString('ur:2sui/oyaa')).toThrow();
+  });
+});

@@ -6,8 +6,7 @@
 
 - [`62dc81e`](https://github.com/ERAWLT/era-connect-sdk/commit/62dc81eff0164eb94981e683d05cb83b8373fba1) Thanks [@gsyabruk](https://github.com/gsyabruk)! - `gunzipCapped` now refuses gzip streams with reserved FLG header bits set
   (RFC 1952 requires them to be zero; the underlying inflater silently ignored
-  them). Aligns the accept/refuse contract with the Dart SDK; no conforming
-  encoder — the device included — ever sets these bits.
+  them). No conforming encoder — the device included — ever sets these bits.
 
 ## 0.5.2
 

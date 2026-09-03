@@ -3,7 +3,7 @@ import { blake2b } from '@noble/hashes/blake2b';
 import { cardanoSoftDerivePath } from '../accounts/derive';
 import type { CardanoWitness } from '../chains/cardano';
 import { parseWitnessSet } from '../chains/cardano';
-import { bytesToHex, equalBytes } from '../core/bytes';
+import { bytesToHex } from '../core/bytes';
 import { parsePath } from '../registry/keypath';
 import type { VerifyResult } from './result';
 import { failed, verified } from './result';
