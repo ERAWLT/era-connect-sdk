@@ -27,7 +27,7 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm --filter @hwlt/era-connect build
       - name: Create release PR or publish
-        uses: changesets/action@v1
+        uses: changesets/action@v2
         with:
           # The action does NOT shell-interpret this command (everything after
           # the binary is passed as argv — `&&` included), so the compound
