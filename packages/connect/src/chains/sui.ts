@@ -138,14 +138,14 @@ function parseSuiSignature(ur: Ur, expectedRequestId: Uint8Array | undefined): S
   const map = requireReplyMap(ur, 'sui-signature');
   const requestId = requireRequestIdEcho(map, 1, expectedRequestId, 'sui-signature');
   const signature = asBytes(mapGet(map, 2));
-  if (!signature || signature.length !== 64) {
+  if (signature?.length !== 64) {
     throw new EraSdkError(
       'malformed-reply',
       `sui-signature signature is ${signature?.length ?? 0} bytes, expected 64`,
     );
   }
   const publicKey = asBytes(mapGet(map, 3));
-  if (!publicKey || publicKey.length !== 32) {
+  if (publicKey?.length !== 32) {
     throw new EraSdkError(
       'malformed-reply',
       'sui-signature is missing the 32-byte public key (key 3)',

@@ -3,7 +3,7 @@ import { blake2b } from '@noble/hashes/blake2b';
 import { ripemd160 } from '@noble/hashes/ripemd160';
 import { sha256 } from '@noble/hashes/sha2';
 import { keccak_256 } from '@noble/hashes/sha3';
-import { base58, bech32, createBase58check } from '@scure/base';
+import { base58, base58xrp, bech32, createBase58check } from '@scure/base';
 import { HDKey } from '@scure/bip32';
 import { encodeCashAddr } from '../chains/cashaddr';
 import { bytesToHex, concatBytes, u32be } from '../core/bytes';
@@ -79,6 +79,26 @@ export function btcNestedSegwitAddressFromPublicKey(
   return base58check.encode(
     concatBytes(new Uint8Array([testnet ? 0xc4 : 0x05]), hash160(redeemScript)),
   );
+}
+
+/**
+ * Cosmos bech32 address: plain bech32 of the 20-byte hash160, with NO
+ * witness-version prefix (that is a segwit thing, not a Cosmos one). Every
+ * zone carries its own HRP over the same key, so `prefix` is the caller's.
+ */
+export function cosmosAddressFromPublicKey(publicKey33: Uint8Array, prefix: string): string {
+  return bech32.encode(prefix, bech32.toWords(hash160(publicKey33)));
+}
+
+/**
+ * XRP classic address (`r...`): base58check over `0x00 || hash160(pubkey)`,
+ * with Bitcoin's double-SHA-256 check but XRPL's own base58 dictionary.
+ * `createBase58check` is hard-wired to the Bitcoin alphabet, so the four
+ * checksum bytes are appended explicitly here.
+ */
+export function xrpAddressFromPublicKey(publicKey: Uint8Array): string {
+  const payload = concatBytes(new Uint8Array([0x00]), hash160(publicKey));
+  return base58xrp.encode(concatBytes(payload, sha256(sha256(payload)).slice(0, 4)));
 }
 
 /** Tron base58check address (0x41-prefixed keccak hash). */

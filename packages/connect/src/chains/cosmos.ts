@@ -173,7 +173,7 @@ function parseCosmosSignature(
   const map = requireReplyMap(ur, ur.type);
   const requestId = requireRequestIdEcho(map, 1, expectedRequestId, ur.type);
   const signature = asBytes(mapGet(map, 2));
-  if (!signature || signature.length !== 64) {
+  if (signature?.length !== 64) {
     throw new EraSdkError(
       'malformed-reply',
       `${ur.type} signature is ${signature?.length ?? 0} bytes, expected 64 (compact r||s)`,

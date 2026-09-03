@@ -16,7 +16,6 @@ import {
   cbText,
   cbUint,
   mapGet,
-  stripTags,
 } from '../src/cbor/model';
 import { TonDataType } from '../src/chains/ton';
 import { bytesToHex, concatBytes, utf8Encode } from '../src/core/bytes';

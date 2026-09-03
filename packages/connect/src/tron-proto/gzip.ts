@@ -36,7 +36,7 @@ export function gunzipCapped(data: Uint8Array, maxOutputBytes: number): Uint8Arr
     throw new EraSdkError('gzip-error', 'compressed payload is not a gzip stream');
   }
   // RFC 1952 requires the reserved FLG bits to be zero; the streaming
-  // inflater below ignores them, so check here — the Dart SDK refuses these
+  // inflater below ignores them, so check here — a conforming decoder refuses
   // and both sides must agree on every accept/refuse decision.
   if ((data[3]! & 0xe0) !== 0) {
     throw new EraSdkError('gzip-error', 'compressed payload has reserved header flag bits set');

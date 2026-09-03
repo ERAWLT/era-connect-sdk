@@ -1,0 +1,16 @@
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      dev-tooling:
+        patterns: ['@biomejs/*', 'publint', '@arethetypeswrong/*', 'tsdown', 'vitest', 'typescript']
+      runtime:
+        patterns: ['@noble/*', '@scure/*', 'fflate']
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly

@@ -42,6 +42,6 @@ copy-pasteable assembly snippet for the mainstream tooling.
 ---
 
 That is the whole integration: **link → request → scan → verify → broadcast**.
-The per-chain pages document every field; [device-specifics](../advanced/device-specifics.md)
+The per-chain pages document every field; the [protocol spec](../protocol/era-hardware-wallet-integration.md)
 lists the handful of places the device deviates from the generic Keystone
 registry — all already encoded in this SDK, listed so you are never surprised.

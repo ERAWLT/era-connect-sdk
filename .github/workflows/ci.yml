@@ -32,6 +32,9 @@ jobs:
         working-directory: packages/connect
       - run: pnpm exec attw --pack .
         working-directory: packages/connect
+      # The README tells integrators to copy files out of the demo, so it has
+      # to keep compiling. The root scripts filter ./packages/*, which skips it.
+      - run: pnpm --filter era-connect-expo-demo typecheck
       - name: Pack artifact for manual smoke installs
         run: pnpm pack --out era-connect.tgz
         working-directory: packages/connect

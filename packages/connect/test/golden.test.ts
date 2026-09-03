@@ -17,7 +17,7 @@ import { gunzipCapped } from '../src/tron-proto/gzip';
  * data; no real wallet material.
  */
 const fixture = JSON.parse(
-  readFileSync(join(__dirname, 'fixtures', 'dart-golden.json'), 'utf8'),
+  readFileSync(join(__dirname, 'fixtures', 'golden-vectors.json'), 'utf8'),
 ) as {
   walletUr: string;
   requestIdHex: string;

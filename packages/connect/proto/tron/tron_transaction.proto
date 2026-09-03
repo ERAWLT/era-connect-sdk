@@ -26,6 +26,6 @@ message TronTx {
     // Full serialized Tron Transaction.raw_data. When present the device can
     // sign sha256(rawData)=txID directly, covering ANY contract (not just the
     // semantic transfer rebuilt from the fields above). The fields above remain
-    // for on-device display. PROPOSED tag — confirm with the firmware team.
+    // for on-device display.
     bytes rawData = 10;
 }

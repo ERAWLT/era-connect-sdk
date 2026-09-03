@@ -5,20 +5,10 @@ import { keccak_256 } from '@noble/hashes/sha3';
 import { describe, expect, it } from 'vitest';
 import { cborDecode } from '../src/cbor/decode';
 import { cborEncode } from '../src/cbor/encode';
-import {
-  asBytes,
-  asMap,
-  asText,
-  asUint,
-  cbBytes,
-  cbMap,
-  cbTag,
-  cbText,
-  mapGet,
-} from '../src/cbor/model';
+import { asBytes, asMap, asText, asUint, cbBytes, cbMap, cbTag, mapGet } from '../src/cbor/model';
 import { suiIntentDigest } from '../src/chains/sui';
-import { bytesToHex, concatBytes, hexToBytes, utf8Encode } from '../src/core/bytes';
-import { EraConnect, EraSdkError, Ur } from '../src/index';
+import { bytesToHex, concatBytes, utf8Encode } from '../src/core/bytes';
+import { EraConnect, Ur } from '../src/index';
 import { verifyCosmosSignature } from '../src/verify/cosmos';
 import { verifySuiSignature } from '../src/verify/sui';
 import { verifyXrpSignature } from '../src/verify/xrp';

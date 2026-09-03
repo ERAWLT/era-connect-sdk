@@ -1,5 +1,9 @@
+import { ripemd160 } from '@noble/hashes/ripemd160';
+import { sha256 } from '@noble/hashes/sha2';
+import { base58xrp, bech32 } from '@scure/base';
 import { HDKey } from '@scure/bip32';
 import { describe, expect, it } from 'vitest';
+import { xrpAddressFromPublicKey } from '../src/accounts/derive';
 import { cborEncode } from '../src/cbor/encode';
 import type { CborValue } from '../src/cbor/model';
 import { cbArray, cbBool, cbBytes, cbMap, cbTag, cbText, cbUint } from '../src/cbor/model';
@@ -50,6 +54,8 @@ function buildWallet(): EraAccounts {
   const evm = master.derive("m/44'/60'/0'");
   const btc = master.derive("m/84'/0'/0'");
   const tron = master.derive("m/44'/195'/0'");
+  const cosmos = master.derive("m/44'/118'/0'");
+  const xrp = master.derive("m/44'/144'/0'");
   const walletCbor = cborEncode(
     cbMap([
       [1, cbUint(master.fingerprint >>> 0)],
@@ -75,12 +81,32 @@ function buildWallet(): EraAccounts {
             [195, true],
             [0, true],
           ]),
+          accountEntry(cosmos, [
+            [44, true],
+            [118, true],
+            [0, true],
+          ]),
+          accountEntry(xrp, [
+            [44, true],
+            [144, true],
+            [0, true],
+          ]),
         ]),
       ],
       [3, cbText('ERA Wallet')],
     ]),
   );
   return EraAccounts.fromUr(new Ur('crypto-multi-accounts', walletCbor));
+}
+
+/** The oracle's own hash160 — never the SDK's. */
+function refHash160(data: Uint8Array): Uint8Array {
+  return ripemd160(sha256(data));
+}
+
+/** Child key straight from the seed, bypassing everything under test. */
+function refChildKey(accountPath: string, index: number): Uint8Array {
+  return HDKey.fromMasterSeed(TEST_SEED).derive(`${accountPath}/0/${index}`).publicKey!;
 }
 
 describe('address derivation from a linked wallet', () => {
@@ -116,9 +142,70 @@ describe('address derivation from a linked wallet', () => {
     expect(address.length).toBe(34);
   });
 
+  it('derives Cosmos addresses under a caller-supplied zone prefix', () => {
+    const cosmos = accounts.cosmos()!;
+    // Independent oracle: seed -> @scure/bip32 -> hash160 -> bech32, no SDK.
+    const words = bech32.toWords(refHash160(refChildKey("m/44'/118'/0'", 0)));
+    expect(cosmos.deriveAddress(0, { prefix: 'cosmos' })).toBe(bech32.encode('cosmos', words));
+    expect(cosmos.deriveAddress(0, { prefix: 'osmo' })).toBe(bech32.encode('osmo', words));
+    expect(cosmos.deriveAddress(3, { prefix: 'celestia' })).toBe(
+      bech32.encode('celestia', bech32.toWords(refHash160(refChildKey("m/44'/118'/0'", 3)))),
+    );
+    // Same key under two HRPs: the same 20 bytes, a checksum that follows the prefix.
+    const payloadOf = (address: string) =>
+      bech32.fromWords(bech32.decode(address as `${string}1${string}`).words);
+    expect(payloadOf(cosmos.deriveAddress(0, { prefix: 'osmo' }))).toEqual(
+      payloadOf(cosmos.deriveAddress(0, { prefix: 'cosmos' })),
+    );
+    expect(payloadOf(cosmos.deriveAddress(0, { prefix: 'cosmos' })).length).toBe(20);
+    expect(cosmos.derivePublicKey(0)).toEqual(refChildKey("m/44'/118'/0'", 0));
+  });
+
+  it('derives XRP classic addresses', () => {
+    const xrp = accounts.xrp()!;
+    // Independent oracle: base58check over XRPL's own alphabet, built here.
+    const payload = new Uint8Array([0x00, ...refHash160(refChildKey("m/44'/144'/0'", 0))]);
+    const expected = base58xrp.encode(
+      new Uint8Array([...payload, ...sha256(sha256(payload)).slice(0, 4)]),
+    );
+    const address = xrp.deriveAddress(0);
+    expect(address).toBe(expected);
+    expect(address.startsWith('r')).toBe(true);
+    expect(xrp.derivePublicKey(0)).toEqual(refChildKey("m/44'/144'/0'", 0));
+  });
+
+  it('matches the published XRPL address-encoding vectors', () => {
+    // XRPL docs worked example (Ed25519 key, 0xED-prefixed).
+    expect(
+      xrpAddressFromPublicKey(
+        hexToBytes('ED9434799226374926EDA3B54B1B461B4ABF7237962EAE18528FEA67595397FA32'),
+      ),
+    ).toBe('rDTXLQ7ZKZVKz33zJbHjgVShjsBnqMBhmN');
+    // The genesis ("masterpassphrase") secp256k1 key: the shape this SDK derives.
+    expect(
+      xrpAddressFromPublicKey(
+        hexToBytes('0330E7FC9D56BB25D6893BA3F317AE5BCF33B3291BD63DB32654A313222F7FD020'),
+      ),
+    ).toBe('rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh');
+  });
+
+  it('classifies the Cosmos and XRP entries instead of shrugging', () => {
+    const byPath = new Map(accounts.keys.map((k) => [k.path, k.chain]));
+    expect(byPath.get("m/44'/118'/0'")).toBe('cosmos');
+    expect(byPath.get("m/44'/144'/0'")).toBe('xrp');
+    expect(accounts.keys.some((k) => k.chain === 'unknown')).toBe(false);
+  });
+
   it('paths and xfps follow the linked entries', () => {
     expect(accounts.evm()?.pathFor(7)).toBe("m/44'/60'/0'/0/7");
     expect(accounts.btc()?.changePath(3)).toBe("m/84'/0'/0'/1/3");
+    expect(accounts.cosmos()?.accountPath).toBe("m/44'/118'/0'");
+    expect(accounts.cosmos()?.pathFor(2)).toBe("m/44'/118'/0'/0/2");
+    expect(accounts.cosmos()?.xfp).toBe('12345678');
+    expect(accounts.xrp()?.accountPath).toBe("m/44'/144'/0'");
+    expect(accounts.xrp()?.signingPath).toBe("m/44'/144'/0'/0/0");
+    expect(accounts.xrp()?.pathFor(5)).toBe("m/44'/144'/0'/0/5");
+    expect(accounts.xrp()?.xfp).toBe('12345678');
     expect(accounts.xfpFor("m/84'/0'/0'")).toBe('12345678');
     expect(() => accounts.xfpFor("m/49'/0'/0'")).toThrowError(EraSdkError);
   });

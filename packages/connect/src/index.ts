@@ -160,12 +160,14 @@ export {
   BchAccountView,
   BtcAccountView,
   CardanoAccountView,
+  CosmosAccountView,
   EraAccounts,
   EvmAccountView,
   SolanaAccountView,
   SuiAccountView,
   TonAccountView,
   TronAccountView,
+  XrpAccountView,
 } from './accounts/accounts';
 export type {
   BchSignatureResult,

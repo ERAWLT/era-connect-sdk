@@ -353,7 +353,7 @@ describe.skipIf(!enabled)('firmware fixture corpus (local, env-gated)', () => {
     };
     for (const c of cases) {
       const request = decodeUrText(c.ur);
-      if (!request || request.type !== 'crypto-psbt-extend') continue;
+      if (request?.type !== 'crypto-psbt-extend') continue;
       const map = cborDecode(request.cbor);
       const psbt = asBytes(mapGet(map, 1))!;
       const coinId = Number(asUint(mapGet(map, 2)));
@@ -374,7 +374,7 @@ describe.skipIf(!enabled)('firmware fixture corpus (local, env-gated)', () => {
     let processed = 0;
     for (const c of cases) {
       const request = decodeUrText(c.ur);
-      if (!request || request.type !== 'keystone-sign-request') continue;
+      if (request?.type !== 'keystone-sign-request') continue;
       processed += 1;
       const requestProto = gunzipCapped(asBytes(mapGet(cborDecode(request.cbor), 1))!, 64 * 1024);
 

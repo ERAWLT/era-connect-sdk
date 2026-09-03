@@ -25,7 +25,7 @@ export class Ur {
   }
 }
 
-const UR_GRAMMAR = /^ur:([a-z-]+)(\/(\d+-\d+))?\/([a-z]+)$/;
+const UR_GRAMMAR = /^ur:([a-z][a-z0-9-]*)(\/(\d+-\d+))?\/([a-z]+)$/;
 
 export interface ParsedUrParts {
   readonly type: string;
