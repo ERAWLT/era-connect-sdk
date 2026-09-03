@@ -7,8 +7,9 @@ Please report anything you find privately.
 
 ## Reporting a vulnerability
 
-Use GitHub's private vulnerability reporting on this repository
-(**Security → Report a vulnerability**), or email **security@hwlt.io**.
+Email **security@hwlt.io**. If GitHub's private vulnerability reporting is
+enabled on this repository (**Security → Report a vulnerability**), that works
+too and keeps the thread on GitHub.
 
 Please include the package version, a minimal reproduction, and what an
 attacker gains. We aim to acknowledge within 3 working days and to ship a fix
@@ -41,6 +42,9 @@ lines are not patched — upgrade to the current version.
 - Findings in the device firmware itself — report those through the hardware
   wallet's own channel, not here.
 - The `examples/` demo app, which is illustrative and not published.
-- Upstream advisories in transitive dependencies of the demo (they never ship
-  in the package; `pnpm audit --prod` is the surface that matters).
+- Upstream advisories that reach only `examples/expo-demo`. The demo is not
+  published; the shipped package's runtime dependencies are the four `@noble`
+  / `@scure` packages and `fflate`, listed in `packages/connect/package.json`.
+  (`pnpm audit` runs over the whole workspace, demo included, so its output is
+  not a statement about what ships.)
 - Missing hardening that has no exploit path, unless you can show one.

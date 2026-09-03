@@ -1,0 +1,15 @@
+name: Documentation problem
+description: A guide is wrong, stale, or contradicts the code.
+labels: [documentation]
+body:
+  - type: input
+    id: page
+    attributes:
+      label: Page
+      placeholder: docs/chains/bitcoin.md, or the package README
+    validations: { required: true }
+  - type: textarea
+    id: problem
+    attributes:
+      label: What it says, and what is actually true
+    validations: { required: true }

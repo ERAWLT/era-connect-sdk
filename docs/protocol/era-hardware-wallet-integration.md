@@ -343,10 +343,13 @@ Each **account entry** is a `crypto-hdkey` CBOR map:
 
 > **Identify the chain by the derivation path (key 6), not the note.** The `note` field is
 > a plain label (`account.standard` / `account.ledger_live` / …), not chain metadata. Match
-> the keypath prefix instead: `44'/60'` → EVM, `84'/0'` → Bitcoin, `44'/501'` → Solana,
-> `44'/195'` → Tron.
+> the keypath prefix instead — `44'/60'` → EVM, `84'/0'` (also `44'`/`49'`/`86'`) → Bitcoin,
+> `44'/501'` → Solana, `44'/195'` → Tron, and see [§7.3](#73-derivation-paths--slip-44) for
+> the rest. An export whose prefix you do not recognise is still usable: it carries its path,
+> fingerprint and public key, so pass it through rather than dropping it.
 
-The chains the device exports, and the account-level paths:
+The four families this guide walks through, and their account-level paths — every other
+family the device exports is in [§7.3](#73-derivation-paths--slip-44):
 
 | Chain | Account path | Key material | Address from |
 |---|---|---|---|
@@ -463,9 +466,10 @@ For Bitcoin, derive `child = node.derive('m/0/<idx>')` and encode a
 
 Every signing operation follows the same loop:
 
-1. **Build** a chain-specific request UR. It carries a `requestId` (a UUID), the raw
-   payload in `signData`, the `crypto-keypath` to sign with, and the expected signer
-   address (where applicable).
+1. **Build** a chain-specific request UR. On most chains it carries a `requestId` (a UUID),
+   the raw payload in `signData`, the `crypto-keypath` to sign with, and the expected signer
+   address (where applicable). Bitcoin PSBT and XRP carry no request id at all — for those the
+   binding is the returned content itself (see [§5](#5-device-specifics-vs-the-keystone-standard)).
 2. **Display** it as an animated QR.
 3. The user **reviews and approves on the device**. The device parses the payload and
    shows the human-readable details on its own screen. *The device is the security
@@ -482,7 +486,9 @@ There are two ways to drive step 1:
   ready transaction or message; you wrap its raw bytes verbatim and let the device parse
   and decide what it can sign. See [§6](#6-optional-backing-a-walletconnect-wallet).
 
-The `requestId` lets you correlate responses and reject stale or mismatched signatures.
+Where a `requestId` exists it lets you correlate responses and reject stale or mismatched
+signatures; on the two chains without one, compare the returned transaction against what you
+sent instead.
 Generate a fresh [UUID](https://www.rfc-editor.org/rfc/rfc9562.html) per request.
 
 ---
@@ -740,7 +746,7 @@ let rawTxHex = tx.serialized.hexString
 import { CryptoPSBT } from '@keystonehq/bc-ur-registry';
 import { Psbt } from 'bitcoinjs-lib';
 
-const ur = new CryptoPSBT(psbtBuffer).toUREncoder(90);   // animate
+const ur = new CryptoPSBT(psbtBuffer).toUREncoder(180);  // animate
 
 // response
 const signed = CryptoPSBT.fromCBOR(responseCbor).getPSBT();
@@ -835,7 +841,7 @@ const req = SolSignRequest.constructSOLRequest(
   ed25519Address,                  // base58
   'My Wallet',
 );
-const ur = req.toUREncoder(90);
+const ur = req.toUREncoder(180);
 
 // response
 const sig = SolSignature.fromCBOR(resp).getSignature();   // 64 bytes

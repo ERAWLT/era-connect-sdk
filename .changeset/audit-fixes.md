@@ -7,8 +7,10 @@ Close out the external repository audit.
 **New:** `accounts.cosmos()` and `accounts.xrp()` — Cosmos and XRP shipped
 full signing modules but no typed account view, and an XRP entry from the
 device classified as `unknown` because `m/44'/144'` was missing from the path
-classifier. Both now behave like the other nine chains; Cosmos addresses take
-the zone's bech32 prefix, XRP exposes the single path the device signs with.
+classifier. Both now behave like every other linked chain; Cosmos addresses
+take the zone's bech32 prefix, XRP exposes the single path the device signs
+with. `SECURITY.md`, issue and pull-request templates, and a dependabot
+configuration are new too.
 
 **Fixed:** the UR type grammar disagreed with itself — a type containing a
 digit could be constructed and then refused as `not-a-ur` on the way back in.

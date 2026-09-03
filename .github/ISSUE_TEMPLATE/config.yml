@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Security vulnerability
+    url: https://github.com/ERAWLT/era-connect-sdk/blob/main/SECURITY.md
+    about: Do NOT open an issue. Report privately — see the security policy.
+  - name: Device or firmware behaviour
+    url: https://github.com/ERAWLT/era-connect-sdk/tree/main/docs
+    about: Questions about what the hardware does belong with the docs, not this SDK's tracker.

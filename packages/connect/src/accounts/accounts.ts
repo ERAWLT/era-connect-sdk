@@ -566,8 +566,9 @@ export class EraAccounts {
 
   /**
    * A Bitcoin account view. Defaults to the BIP-84 native-segwit account;
-   * pass `purpose: 44` for the legacy P2PKH account (message signing), 49 for
-   * nested segwit, 86 for taproot — if the export carries them.
+   * pass `purpose: 44` for legacy P2PKH, 49 for nested segwit, 86 for taproot
+   * — if the export carries them. Which of those can sign MESSAGES depends on
+   * the firmware; see [BtcAccountView].
    */
   btc(options?: { testnet?: boolean; purpose?: BtcPurpose }): BtcAccountView | undefined {
     const purpose = options?.purpose ?? 84;

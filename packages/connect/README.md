@@ -103,13 +103,14 @@ The full guide lives in [`docs/`](https://github.com/ERAWLT/era-connect-sdk/tree
 4. [Scan the signature](https://github.com/ERAWLT/era-connect-sdk/blob/main/docs/getting-started/04-scan-signature.md)
 5. [Verify & broadcast](https://github.com/ERAWLT/era-connect-sdk/blob/main/docs/getting-started/05-broadcast.md)
 
-Per-chain guides, device specifics vs. the Keystone standard, QR tuning, the
-WalletConnect forwarding model and a migration note from
-`@keystonehq/keystone-sdk` are under
+Per-chain guides, QR tuning, the WalletConnect forwarding model and a
+migration note from `@keystonehq/keystone-sdk` are under
 [`docs/chains`](https://github.com/ERAWLT/era-connect-sdk/tree/main/docs/chains) and
 [`docs/advanced`](https://github.com/ERAWLT/era-connect-sdk/tree/main/docs/advanced).
-The normative wire specification is
-[`docs/protocol`](https://github.com/ERAWLT/era-connect-sdk/tree/main/docs/protocol).
+The wire specification — what to implement if you cannot use the SDK — is
+[`docs/protocol`](https://github.com/ERAWLT/era-connect-sdk/tree/main/docs/protocol);
+it walks through EVM, Bitcoin, Solana and Tron in full, and its reference
+tables cover every UR type the device speaks.
 
 ## License
 

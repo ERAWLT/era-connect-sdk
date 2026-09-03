@@ -13,7 +13,7 @@
 ### Patch Changes
 
 - [`603623f`](https://github.com/ERAWLT/era-connect-sdk/commit/603623f1471d1c007d3d9cd7db103bb5a778215c) Thanks [@gsyabruk](https://github.com/gsyabruk)! - Documentation audit: the package README no longer claims "dedicated modules
-  for four chains" (there are ten) and the Bitcoin message-signing capability is
+  for four chains" (there are eleven) and the Bitcoin message-signing capability is
   described per firmware generation everywhere it is mentioned; the verification
   guide's helper table now lists every exported verifier (TON, Cardano, Sui,
   Cosmos and the mandatory XRP one included); the LTC/DOGE/DASH linking note

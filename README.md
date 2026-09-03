@@ -10,7 +10,7 @@ Cosmos and XRP — see the chain-support table in the
 - **npm package:** [`@hwlt/era-connect`](packages/connect) — headless,
   TypeScript, React-Native-first, zero I/O.
 - **Documentation:** [`docs/`](docs) — a 15-minute getting-started funnel,
-  per-chain guides, device specifics and the normative wire spec.
+  per-chain guides and the wire specification.
 - **Demo app:** [`examples/expo-demo`](examples) — link + sign, fully offline.
 
 ```ts

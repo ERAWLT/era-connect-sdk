@@ -1,0 +1,41 @@
+name: Bug report
+description: Something in the SDK behaves differently than documented.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Found a security flaw instead? Do not file it here — see
+        [SECURITY.md](https://github.com/ERAWLT/era-connect-sdk/blob/main/SECURITY.md).
+  - type: input
+    id: version
+    attributes:
+      label: Package version
+      placeholder: "@hwlt/era-connect 0.6.0"
+    validations: { required: true }
+  - type: dropdown
+    id: chain
+    attributes:
+      label: Chain
+      options: [EVM, Bitcoin, Bitcoin Cash, Litecoin/Dogecoin/Dash, Solana, Tron, TON, Cardano, Sui, Cosmos, XRP, "Not chain-specific"]
+    validations: { required: true }
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you called, what came back, and what you expected instead.
+    validations: { required: true }
+  - type: textarea
+    id: repro
+    attributes:
+      label: Reproduction
+      description: |
+        The smallest snippet that shows it. If a device reply is involved, paste the
+        `ur:` string — but redact anything you would not publish, and never paste a
+        seed phrase or private key.
+      render: typescript
+  - type: input
+    id: firmware
+    attributes:
+      label: Device firmware version
+      description: If the device was involved.

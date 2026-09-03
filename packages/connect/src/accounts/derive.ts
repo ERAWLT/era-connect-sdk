@@ -63,7 +63,7 @@ export function btcP2wpkhAddressFromPublicKey(
   return bech32.encode(hrp, [0, ...bech32.toWords(hash160(publicKey33))]);
 }
 
-/** Legacy P2PKH base58check address (`1...`) — the kind the device signs messages for. */
+/** Legacy P2PKH base58check address (`1...`). */
 export function btcP2pkhAddressFromPublicKey(publicKey33: Uint8Array, testnet = false): string {
   return base58check.encode(
     concatBytes(new Uint8Array([testnet ? 0x6f : 0x00]), hash160(publicKey33)),

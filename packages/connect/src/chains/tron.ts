@@ -105,10 +105,9 @@ export class TronChain {
     }
 
     const proto = encodeSignRequestProto({
-      // Zero-padded to eight characters: the firmware parses this string with
-      // a hex reader that yields 0 for anything shorter than 4 bytes, and a
-      // zero fingerprint fails validation — a wallet whose fingerprint starts
-      // with a zero byte (1 in 256) could not sign at all without the pad.
+      // Zero-padded to eight characters. The wire wants the full 4-byte
+      // fingerprint as hex; a short string reads back as a different value,
+      // and the request is refused. Do not "simplify" this to a bare toString(16).
       xfpHex: xfpToHex(xfp),
       signId: uuidStringify(requestId),
       hdPath: props.path,
