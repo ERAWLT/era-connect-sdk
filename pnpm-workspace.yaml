@@ -1,7 +1,10 @@
 packages:
   - packages/*
   - examples/*
-# esbuild ships a platform binary and needs its install script to run;
-# everything else stays blocked (pnpm's default).
-onlyBuiltDependencies:
-  - esbuild
+
+# pnpm blocks dependency build scripts by default and errors until each one is
+# decided. esbuild arrives transitively and nothing here invokes its binary, so
+# the decision is a recorded "no" — which is also what keeps
+# `--frozen-lockfile` quiet in CI.
+allowBuilds:
+  esbuild: false
