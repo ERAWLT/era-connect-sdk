@@ -6,7 +6,24 @@
  * arithmetic is bundled only by apps that import it (do).
  */
 
+// Every type an argument object DECLARES is exported here, so an app that
+// imports this entry alone can name the values it hands the verifiers.
+// `CardanoWitness` is the declared type of `VerifyCardanoSignatureArgs.witnesses`.
+export type { CardanoWitness } from './chains/cardano';
+// `VerifyEvmSignatureArgs.dataType` is one of these.
+export { EvmDataType } from './chains/evm';
+// `VerifyTonSignatureArgs.dataType` is one of these.
+export { TonDataType } from './chains/ton';
+// `parsePsbt`, `decodeBchRawTx` and `bocRootHash` throw this; catching it by
+// type needs the class, and this entry is importable on its own.
+export type { EraErrorCode } from './core/errors';
+export { EraSdkError } from './core/errors';
+// `VerifyTronSignatureArgs.latestBlock` is a TronLatestBlock, and its
+// `signedTx` is a SignedTronTx (or the raw hex of one).
+export type { SignedTronTx, TronLatestBlock } from './tron-proto/messages';
 export type {
+  DecodedBchInput,
+  DecodedBchOutput,
   DecodedBchTx,
   VerifyBchInput,
   VerifyBchOutput,

@@ -39,7 +39,8 @@ Payloads over 32 KiB still sign, but the device falls back to blind signing
 
 ```ts
 // viem example — EIP-1559
-import { serializeTransaction, parseGwei } from 'viem';
+import { hexToBytes } from '@hwlt/era-connect';
+import { serializeTransaction } from 'viem';
 const unsigned = { chainId: 1, nonce, maxPriorityFeePerGas, maxFeePerGas,
                    gas, to, value, data, type: 'eip1559' as const };
 const signData = hexToBytes(serializeTransaction(unsigned)); // 0x02‖RLP(...)
@@ -63,8 +64,9 @@ const sig = scanner.parse();         // or era.evm.parseSignature(ur, { requestI
 ## 3. Assemble & broadcast
 
 ```ts
-import { serializeTransaction } from 'viem';
+import { bytesToHex } from '@hwlt/era-connect';
 import { verifyEvmSignature } from '@hwlt/era-connect/verify';
+import { serializeTransaction } from 'viem';
 
 const check = verifyEvmSignature({ signData, dataType, signature: sig.signature, address });
 if (!check.ok) throw new Error(check.reason);

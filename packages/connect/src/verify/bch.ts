@@ -51,22 +51,24 @@ const BCH_TX_VERSION = 1;
 const BCH_TX_LOCKTIME = 0;
 const BCH_TX_SEQUENCE = 0xfffffffd;
 
-interface DecodedInput {
+/** One input of a decoded `DecodedBchTx`. */
+export interface DecodedBchInput {
   readonly txidLE: Uint8Array;
   readonly index: number;
   readonly scriptSig: Uint8Array;
   readonly sequence: number;
 }
 
-interface DecodedOutput {
+/** One output of a decoded `DecodedBchTx`. */
+export interface DecodedBchOutput {
   readonly value: bigint;
   readonly script: Uint8Array;
 }
 
 export interface DecodedBchTx {
   readonly version: number;
-  readonly inputs: readonly DecodedInput[];
-  readonly outputs: readonly DecodedOutput[];
+  readonly inputs: readonly DecodedBchInput[];
+  readonly outputs: readonly DecodedBchOutput[];
   readonly locktime: number;
 }
 
@@ -126,7 +128,7 @@ export function decodeBchRawTx(rawTxHex: string): DecodedBchTx {
   if (inputCount === 0 || inputCount > 1000) {
     throw new EraSdkError('malformed-reply', 'unreasonable input count in signed transaction');
   }
-  const inputs: DecodedInput[] = [];
+  const inputs: DecodedBchInput[] = [];
   for (let i = 0; i < inputCount; i++) {
     const txidLE = readSlice(32);
     const index = readU32();
@@ -138,7 +140,7 @@ export function decodeBchRawTx(rawTxHex: string): DecodedBchTx {
   if (outputCount === 0 || outputCount > 1000) {
     throw new EraSdkError('malformed-reply', 'unreasonable output count in signed transaction');
   }
-  const outputs: DecodedOutput[] = [];
+  const outputs: DecodedBchOutput[] = [];
   for (let i = 0; i < outputCount; i++) {
     const value = readU64();
     const script = readSlice(readVarint());

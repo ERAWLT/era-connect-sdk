@@ -14,7 +14,7 @@ import {
   mapGet,
 } from '../src/cbor/model';
 import { concatBytes, hexToBytes, utf8Decode } from '../src/core/bytes';
-import { EraAccounts, EraConnect, EraSdkError, Ur } from '../src/index';
+import { EraAccounts, EraConnect, EraSdkError, Ur, WALLET_UR_TYPES } from '../src/index';
 import { gunzipCapped, gzipCompress } from '../src/tron-proto/gzip';
 
 /** Regression tests for the pre-release adversarial review findings. */
@@ -27,7 +27,24 @@ describe('qr-hardware-call encodes and round-trips (review: depth cap)', () => {
       schemas: [{ path: "m/44'/60'/0'" }, { path: "m/44'/501'/3'", curve: 'ed25519' }],
     });
     expect(call.ur.type).toBe('qr-hardware-call');
-    expect(call.replyTypes).toContain('crypto-multi-accounts');
+
+    // `replyTypes` is not metadata: `scanner()` is built from it, so a
+    // narrowed list is a scanner that rejects link frames the device really
+    // sends — which is what the wallet-export list exists to prevent, and
+    // what `toContain('crypto-multi-accounts')` alone still admitted. Pin the
+    // whole set, both as the constant and spelled out.
+    expect(call.replyTypes).toEqual(WALLET_UR_TYPES);
+    expect([...call.replyTypes]).toEqual([
+      'crypto-multi-accounts',
+      'crypto-account',
+      'crypto-hdkey',
+    ]);
+
+    // And behaviourally, on the frame a narrowed list drops silently: a
+    // `crypto-hdkey` link (TON's) looks to a user like a camera that will not
+    // read the QR.
+    const hdkeyFrame = new Ur('crypto-hdkey', cborEncode(cbMap([[1, cbUint(1)]]))).toString();
+    expect(call.scanner().receivePart(hdkeyFrame).kind).toBe('complete');
 
     const root = asMap(cborDecode(call.ur.cbor))!;
     expect(mapGet(root, 1)).toEqual(cbUint(0)); // type: KeyDerivation
