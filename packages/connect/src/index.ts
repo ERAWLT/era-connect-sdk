@@ -169,18 +169,35 @@ export {
   TronAccountView,
   XrpAccountView,
 } from './accounts/accounts';
+// Address derivation from a public key you already hold — the same primitives
+// the account views use, for callers that keep their own key material.
+export {
+  bchAddressFromPublicKey,
+  btcNestedSegwitAddressFromPublicKey,
+  btcP2pkhAddressFromPublicKey,
+  btcP2wpkhAddressFromPublicKey,
+  cosmosAddressFromPublicKey,
+  evmAddressFromPublicKey,
+  solanaAddressFromPublicKey,
+  suiAddressFromPublicKey,
+  tronAddressFromPublicKey,
+  xrpAddressFromPublicKey,
+} from './accounts/derive';
 export type {
   BchSignatureResult,
   BchSignRequestProps,
   BchTxInput,
   BchTxOutput,
+  CashAddrPayload,
+  CashAddrType,
 } from './chains/bch';
-export { BchChain } from './chains/bch';
+export { BchChain, CASHADDR_PREFIX, decodeCashAddr, encodeCashAddr } from './chains/bch';
 export type {
   BtcMessageSignatureResult,
   BtcMessageSignRequestProps,
   BtcPsbtResult,
   BtcPsbtSignRequestProps,
+  PsbtCoin,
 } from './chains/btc';
 export { BtcChain } from './chains/btc';
 export type {
@@ -193,7 +210,7 @@ export type {
 export { CardanoChain, parseWitnessSet } from './chains/cardano';
 export { CosmosChain, CosmosDataType } from './chains/cosmos';
 export type { EvmSignatureResult, EvmSignRequestProps } from './chains/evm';
-export { EvmChain, EvmDataType } from './chains/evm';
+export { EvmChain, EvmDataType, foldRecoveryId } from './chains/evm';
 export type {
   ChainContext,
   EraConnectConfig,
@@ -206,14 +223,21 @@ export { SolanaChain, SolSignType } from './chains/solana';
 export { SuiChain, suiIntentDigest } from './chains/sui';
 export type { TonSignatureResult, TonSignRequestProps } from './chains/ton';
 export { TonChain, TonDataType } from './chains/ton';
-export type { TronLatestBlock, TronSignatureResult, TronSignRequestProps } from './chains/tron';
-export { TronChain } from './chains/tron';
+export type {
+  SignedTronTx,
+  TronLatestBlock,
+  TronSignatureResult,
+  TronSignRequestProps,
+} from './chains/tron';
+export { splitSignedTronTx, TronChain } from './chains/tron';
 export { XrpChain } from './chains/xrp';
-// UTF-8 helpers that work on every Hermes version (TextEncoder does not):
-export { utf8Decode, utf8Encode } from './core/bytes';
+// Byte helpers: hex conversion, plus UTF-8 codecs that work on every Hermes
+// version (TextEncoder/TextDecoder do not).
+export { bytesToHex, hexToBytes, utf8Decode, utf8Encode } from './core/bytes';
 export type { EraErrorCode } from './core/errors';
 export { EraSdkError } from './core/errors';
 export type { RandomBytesFn } from './core/rand';
+export { randomRequestId, uuidStringify } from './core/rand';
 export type {
   DerivationAlgorithm,
   DerivationCurve,
@@ -224,6 +248,10 @@ export type {
 export type { AnimatedUrOptions } from './qr/animated-ur';
 export { AnimatedUr, DEFAULT_FRAGMENT_LENGTH } from './qr/animated-ur';
 export { RawModule } from './raw';
+export type { PathLevel } from './registry/keypath';
+export { formatPath, parsePath, pathEquals } from './registry/keypath';
+export type { RawAccountEntry, RawMultiAccounts } from './registry/multi-accounts';
+export { parseMultiAccountsUr, WALLET_UR_TYPES } from './registry/multi-accounts';
 export type { ScanFeedResult, ScanRejection, UrScannerOptions } from './scan/ur-scanner';
 export { TypedUrScanner, UrScanner } from './scan/ur-scanner';
 export { UrLimits } from './ur/limits';

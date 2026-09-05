@@ -1,0 +1,46 @@
+// JSONC, not JSON, so the exclusion below can carry its reason. Biome reads
+// `biome.jsonc` natively; a comment in a `biome.json` makes it fall back to
+// its defaults and lint `dist/` instead of failing loudly, which is why the
+// file has this extension.
+{
+  "$schema": "https://biomejs.dev/schemas/2.5.11/schema.json",
+  "files": {
+    "includes": [
+      "packages/**",
+      "examples/**",
+      "!**/dist",
+      "!**/node_modules",
+      // `accounts-testnet.json` is not this repo's file. It is a SHARED
+      // artifact: the sibling SDK carries a byte-identical copy at its own
+      // path, and both suites pin the same SHA-256 of it (see
+      // `packages/connect/test/accounts-testnet-parity.test.ts`). Biome's
+      // formatter covers JSON, so without this exclusion `biome check
+      // --write` would reformat our copy, break that checksum on this side
+      // only, and quietly turn one artifact into two files that used to
+      // match. Do not remove it; regenerate the fixture in BOTH repos
+      // instead, and update the constant in both suites.
+      "!**/test/fixtures/accounts-testnet.json"
+    ]
+  },
+  "formatter": {
+    "enabled": true,
+    "indentStyle": "space",
+    "indentWidth": 2,
+    "lineWidth": 100
+  },
+  "linter": {
+    "enabled": true,
+    "rules": {
+      "preset": "recommended",
+      "style": {
+        "noNonNullAssertion": "off"
+      }
+    }
+  },
+  "javascript": {
+    "formatter": {
+      "quoteStyle": "single",
+      "trailingCommas": "all"
+    }
+  }
+}

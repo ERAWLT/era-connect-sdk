@@ -32,12 +32,14 @@ and import it once at app start (or inject your own via `randomBytes`).
 ## 60 seconds to a signature
 
 ```ts
-import { EraConnect, EvmChain } from '@hwlt/era-connect';
+import { EraConnect, EvmChain, WALLET_UR_TYPES } from '@hwlt/era-connect';
 
 const era = new EraConnect({ origin: 'MyWallet' }); // shown on the device
 
 // 1. LINK — the user shows the device's "connect" QR; you scan it.
-const scanner = era.scanner({ expectedTypes: ['crypto-multi-accounts'] });
+// WALLET_UR_TYPES is every UR type a device links with — pin all of them, not
+// one literal: TON, for instance, links as a standalone `crypto-hdkey`.
+const scanner = era.scanner({ expectedTypes: WALLET_UR_TYPES });
 // feed camera frames: scanner.receivePart(text) → { kind: 'complete', ur } when done
 const accounts = era.parseAccounts(scanner.result());
 const evm = accounts.evm()!;

@@ -79,7 +79,7 @@ export function generateKeyDerivationCall(
   ]);
 
   const ur = new UrValue('qr-hardware-call', cborEncode(root));
-  const replyTypes = [...WALLET_UR_TYPES];
+  const replyTypes = WALLET_UR_TYPES;
   return {
     ur,
     replyTypes,

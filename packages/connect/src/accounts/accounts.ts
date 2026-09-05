@@ -16,7 +16,10 @@ import {
   serializeExtendedPublicKey,
   solanaAddressFromPublicKey,
   suiAddressFromPublicKey,
+  TPUB_VERSION,
   tronAddressFromPublicKey,
+  VPUB_VERSION,
+  XPUB_VERSION,
   xrpAddressFromPublicKey,
   ZPUB_VERSION,
 } from './derive';
@@ -24,6 +27,17 @@ import {
 /** Chain family of an exported account, matched by its derivation path — never by the note label. */
 export type AccountChain =
   | 'evm'
+  /**
+   * Bitcoin MAINNET, at coin type 0' — all four purposes (44/49/84/86).
+   *
+   * A coin-type-1' path is deliberately NOT reported as Bitcoin. SLIP-44
+   * assigns coin type 1 to "Testnet (all coins)", so `m/84'/1'/0'` is as much
+   * a Litecoin testnet account as a Bitcoin one — and this SDK's own
+   * `PsbtCoin` admits ltc, doge and dash. Attribution has no caller intent to
+   * lean on, so it must stay `unknown` rather than guess. `btc({ testnet:
+   * true })` resolves that very path only because the caller named the chain.
+   * Do not "fix" `classify` to widen this.
+   */
   | 'btc'
   | 'bch'
   | 'solana'
@@ -63,6 +77,7 @@ function classify(path: readonly PathLevel[]): AccountChain {
   const p1 = path[1];
   if (!p0 || !p1 || !p0.hardened || !p1.hardened) return 'unknown';
   if (p0.index === 44 && p1.index === 60) return 'evm';
+  // Coin type 0' only, on purpose — see the `btc` member of AccountChain.
   if (
     p1.index === 0 &&
     (p0.index === 84 || p0.index === 49 || p0.index === 44 || p0.index === 86)
@@ -136,20 +151,52 @@ export class EvmAccountView {
 export type BtcPurpose = 44 | 49 | 84 | 86;
 
 /**
+ * The only purposes `btc()` resolves an account for. A purpose outside this
+ * set has no script type, no address encoding and no SLIP-132 form, so there
+ * is nothing a view over it could honestly answer — and TypeScript alone does
+ * not bound it: a JavaScript caller, or a cast, reaches the same method.
+ */
+const BTC_PURPOSES: ReadonlySet<number> = new Set<number>([44, 49, 84, 86]);
+
+/**
+ * Whether `entry` is a TESTNET account, read off its coin type. SLIP-44 gives
+ * coin type 1 to "Testnet (all coins)"; every other coin type a Bitcoin view
+ * can wrap is a mainnet account.
+ */
+function isTestnetAccount(entry: RawAccountEntry): boolean {
+  const coinType = entry.path[1];
+  return coinType?.hardened === true && coinType.index === 1;
+}
+
+/**
  * Bitcoin view over one exported account. The default is the BIP-84
  * native-segwit account; pass `purpose` to reach the other script types the
  * device exports (44 = legacy P2PKH, 49 = nested segwit, 84 = native segwit,
  * 86 = taproot). Message signing covers 44/49/84 on firmware 2.1.0+ and
  * legacy P2PKH alone on older firmware; Taproot is never message-signable
  * (BIP-137 has no header range for it).
+ *
+ * The network is a property of the ACCOUNT this view was selected for, not a
+ * rendering option: a testnet view exists only when the export carries a
+ * coin-type-1' account, and then its addresses, its `accountPath` and its
+ * extended keys are all testnet.
  */
 export class BtcAccountView {
+  private readonly testnet: boolean;
+
+  /**
+   * Wraps one selected account. The NETWORK is not a parameter: it is read
+   * off `entry`'s own coin type, so a mainnet entry can never be dressed as a
+   * testnet account — which is precisely the confident wrong answer this view
+   * used to be able to produce.
+   */
   constructor(
     private readonly entry: RawAccountEntry,
-    private readonly testnet: boolean,
     readonly purpose: BtcPurpose,
     private readonly resolvedXfp: number,
-  ) {}
+  ) {
+    this.testnet = isTestnetAccount(entry);
+  }
 
   get xfp(): string {
     return xfpToHex(this.resolvedXfp);
@@ -187,14 +234,28 @@ export class BtcAccountView {
           'invalid-props',
           'taproot addresses need the BIP-341 output-key tweak; derive them from xpub() with your Bitcoin library',
         );
+      // Unreachable through `btc()`, which bounds the purpose — but the
+      // constructor is public and `BtcPurpose` is erased at runtime, so a
+      // JavaScript caller (or a cast) lands here. Without this arm the switch
+      // is exhaustive over the union, `tsc` stays silent and the method
+      // returns `undefined` from a signature declared `: string` — which
+      // reaches a QR encoder or a change output as the text "undefined".
+      default:
+        throw new EraSdkError('invalid-props', `unsupported BIP purpose ${this.purpose}`);
     }
   }
 
+  /** Account xpub — a `tpub...` when the account is a testnet one. */
   xpub(): string {
-    return extendedKeyOf(this.entry);
+    return extendedKeyOf(this.entry, this.testnet ? TPUB_VERSION : XPUB_VERSION);
   }
 
-  /** SLIP-132 zpub form of the BIP-84 key, for tools that require it. */
+  /**
+   * SLIP-132 zpub form of the BIP-84 key, for tools that require it. On a
+   * testnet account this is the SLIP-132 BIP-84 TESTNET key, which prints as
+   * `vpub...`; the method keeps its name and still refuses any purpose other
+   * than 84.
+   */
   zpub(): string {
     if (this.purpose !== 84) {
       throw new EraSdkError(
@@ -202,7 +263,7 @@ export class BtcAccountView {
         'zpub is the SLIP-132 form of the BIP-84 account only',
       );
     }
-    return extendedKeyOf(this.entry, ZPUB_VERSION);
+    return extendedKeyOf(this.entry, this.testnet ? VPUB_VERSION : ZPUB_VERSION);
   }
 }
 
@@ -569,15 +630,41 @@ export class EraAccounts {
    * pass `purpose: 44` for legacy P2PKH, 49 for nested segwit, 86 for taproot
    * — if the export carries them. Which of those can sign MESSAGES depends on
    * the firmware; see [BtcAccountView].
+   *
+   * `purpose` is bounded to {44, 49, 84, 86} at RUNTIME, not just by its
+   * type: any other value returns `undefined` rather than a view, because an
+   * arbitrary purpose has no script type and no address encoding, so a view
+   * over it could serve a plausible-looking `xpub()` and refuse only later,
+   * at the first address.
+   *
+   * `testnet` SELECTS an account, it does not re-render one: the match is the
+   * export's entry at `m/<purpose>'/<0 | 1>'/...`, and `undefined` comes back
+   * when there is none. There is deliberately no fallback to the other
+   * network — a mainnet key printed under a testnet HRP is a wrong answer
+   * that looks right.
+   *
+   * ERA firmware exports Bitcoin accounts at coin type 0' only, so for a
+   * wallet linked from an ERA device `btc({ testnet: true })` is `undefined`.
+   * The option stays because the export format carries coin-type-1' accounts
+   * and other wallet profiles populate them.
    */
   btc(options?: { testnet?: boolean; purpose?: BtcPurpose }): BtcAccountView | undefined {
     const purpose = options?.purpose ?? 84;
-    const entry = this.raw.entries.find(
-      (e) => classify(e.path) === 'btc' && e.path[0]?.index === purpose,
-    );
-    return entry
-      ? new BtcAccountView(entry, options?.testnet ?? false, purpose, this.resolveXfp(entry))
-      : undefined;
+    if (!BTC_PURPOSES.has(purpose)) return undefined;
+    const coinType = options?.testnet ? 1 : 0;
+    const entry = this.raw.entries.find((e) => {
+      const p0 = e.path[0];
+      const p1 = e.path[1];
+      return (
+        p0 !== undefined &&
+        p1 !== undefined &&
+        p0.hardened &&
+        p1.hardened &&
+        p0.index === purpose &&
+        p1.index === coinType
+      );
+    });
+    return entry ? new BtcAccountView(entry, purpose, this.resolveXfp(entry)) : undefined;
   }
 
   tron(): TronAccountView | undefined {

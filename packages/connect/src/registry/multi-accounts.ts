@@ -42,12 +42,31 @@ export interface RawMultiAccounts {
   readonly entries: readonly RawAccountEntry[];
 }
 
-/** UR types a device links a watch-only wallet with. */
-export const WALLET_UR_TYPES: ReadonlySet<string> = new Set([
+/**
+ * UR types a device links a watch-only wallet with — drop it straight into a
+ * scanner's `expectedTypes`.
+ *
+ * A FROZEN array, not a `Set`: `ReadonlySet` is erased at compile time, so an
+ * exported `Set` is a live one at runtime and `WALLET_UR_TYPES.add(...)`
+ * — no cast required — would widen the type gate below for the whole process.
+ * The gate keeps its own `Set`, built once from this array and unreachable
+ * from outside this module.
+ */
+export const WALLET_UR_TYPES: readonly string[] = Object.freeze([
   'crypto-multi-accounts',
   'crypto-account',
   'crypto-hdkey',
 ]);
+
+/**
+ * The gate's own copy — private, and never handed out. It is DERIVED from the
+ * array above and must stay that way: an advertised list that admits three
+ * types while the gate enforces four is the hazard this split introduced in
+ * place of the mutable-Set one. Nothing in the type system pairs them, so the
+ * pairing is asserted behaviourally, in both directions, by "advertises
+ * exactly the types its private gate enforces" in `test/public-surface.test.ts`.
+ */
+const WALLET_UR_TYPE_SET: ReadonlySet<string> = new Set(WALLET_UR_TYPES);
 
 /**
  * Parse a wallet-export UR.
@@ -75,13 +94,13 @@ export function parseMultiAccountsUr(input: Ur | string): RawMultiAccounts {
     cbor = input.cbor;
   }
 
-  if (!WALLET_UR_TYPES.has(type)) {
+  if (!WALLET_UR_TYPE_SET.has(type)) {
     // The type is attacker-sized (the UR grammar allows an unbounded letter
     // run) — truncate before it reaches a message or error data.
     const shown = type.length > 32 ? `${type.slice(0, 32)}…` : type;
     throw new EraSdkError(
       'wrong-ur-type',
-      `"${shown}" is not a wallet export; expected one of ${[...WALLET_UR_TYPES].join(', ')}`,
+      `"${shown}" is not a wallet export; expected one of ${WALLET_UR_TYPES.join(', ')}`,
       { received: shown },
     );
   }

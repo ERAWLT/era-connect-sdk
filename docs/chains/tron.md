@@ -14,9 +14,12 @@ dApp calldata. The display fields exist only for the device screen.
 ## 1. Generate the sign request
 
 ```ts
+const tron = accounts.tron();       // m/44'/195'/0' — pathFor(i), deriveAddress(i), xfp
+if (!tron) throw new Error('the export carries no Tron account');
+
 const request = era.tron.generateSignRequest({
   rawData,                          // Uint8Array — Transaction.raw_data bytes
-  path: "m/44'/195'/0'/0/0",
+  path: tron.pathFor(0),            // "m/44'/195'/0'/0/0"
   xfp: tron.xfp,
   latestBlock: { hash, number, timestamp },   // see below
   display: {                        // optional, device screen only
@@ -35,6 +38,8 @@ const request = era.tron.generateSignRequest({
 | `display.*` | – | Safe to omit entirely for opaque dApp transactions |
 
 ```ts
+import { hexToBytes } from '@hwlt/era-connect';
+
 // tronweb
 const tx = await tronWeb.transactionBuilder.sendTrx(to, amount, from);
 const block = await tronWeb.trx.getCurrentBlock();

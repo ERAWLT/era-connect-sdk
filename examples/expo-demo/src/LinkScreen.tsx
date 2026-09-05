@@ -1,4 +1,5 @@
 import type { EraAccounts, EraConnect } from '@hwlt/era-connect';
+import { WALLET_UR_TYPES } from '@hwlt/era-connect';
 import { useMemo, useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { UrScannerView } from './UrScannerView';
@@ -9,10 +10,9 @@ export function LinkScreen(props: {
   accounts: EraAccounts | null;
   onLinked: (accounts: EraAccounts) => void;
 }) {
-  const scanner = useMemo(
-    () => props.era.scanner({ expectedTypes: ['crypto-multi-accounts'] }),
-    [props.era],
-  );
+  // Every UR type a device links with, not just the multichain export — a TON
+  // link arrives as a standalone `crypto-hdkey` and a literal list refuses it.
+  const scanner = useMemo(() => props.era.scanner({ expectedTypes: WALLET_UR_TYPES }), [props.era]);
   const [error, setError] = useState<string | null>(null);
   const accounts = props.accounts;
 

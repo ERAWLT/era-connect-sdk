@@ -22,7 +22,8 @@ import {
   toUr,
 } from './shared';
 
-export type { TronLatestBlock } from '../tron-proto/messages';
+export type { SignedTronTx, TronLatestBlock } from '../tron-proto/messages';
+export { splitSignedTronTx } from '../tron-proto/messages';
 
 export interface TronSignRequestProps {
   readonly requestId?: Uint8Array | string;

@@ -21,10 +21,15 @@ Three TON-specific facts drive the integration:
 ## 0. Linking
 
 TON is exported as a standalone `crypto-hdkey` (the minimal `{key, keypath,
-name}` shape), not inside the multichain export. Scan it like any link QR:
+name}` shape), not inside the multichain export. Scan it like any link QR —
+and pin the scanner to `WALLET_UR_TYPES`, never to a hand-written list: TON is
+precisely the link a literal `['crypto-multi-accounts']` refuses frame by
+frame, with nothing on screen to say why.
 
 ```ts
-const scanner = era.scanner({ expectedTypes: ['crypto-hdkey', 'crypto-multi-accounts'] });
+import { WALLET_UR_TYPES } from '@hwlt/era-connect';
+
+const scanner = era.scanner({ expectedTypes: WALLET_UR_TYPES });
 // ...feed camera frames...
 const accounts = era.parseAccounts(scanner.result());
 const ton = accounts.ton()!;

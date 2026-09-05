@@ -120,6 +120,8 @@ export function solanaAddressFromPublicKey(publicKey32: Uint8Array): string {
 
 const XPUB_VERSION = 0x0488b21e;
 const ZPUB_VERSION = 0x04b24746; // SLIP-132, BIP-84 P2WPKH
+const TPUB_VERSION = 0x043587cf; // SLIP-132, testnet counterpart of xpub
+const VPUB_VERSION = 0x045f1cf6; // SLIP-132, BIP-84 P2WPKH testnet
 
 /** BIP-32 extended public key serialization. */
 export function serializeExtendedPublicKey(args: {
@@ -156,7 +158,7 @@ export function serializeExtendedPublicKey(args: {
   );
 }
 
-export { XPUB_VERSION, ZPUB_VERSION };
+export { TPUB_VERSION, VPUB_VERSION, XPUB_VERSION, ZPUB_VERSION };
 
 // ---------------------------------------------------------------------------
 // Cardano (BIP32-Ed25519 / CIP-3 "V2") soft public derivation
