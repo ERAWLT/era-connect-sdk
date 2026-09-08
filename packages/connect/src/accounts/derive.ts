@@ -3,10 +3,10 @@ import { blake2b } from '@noble/hashes/blake2b';
 import { ripemd160 } from '@noble/hashes/ripemd160';
 import { sha256 } from '@noble/hashes/sha2';
 import { keccak_256 } from '@noble/hashes/sha3';
-import { base58, base58xrp, bech32, bech32m, createBase58check } from '@scure/base';
+import { base58, base58xrp, base64urlnopad, bech32, bech32m, createBase58check } from '@scure/base';
 import { HDKey } from '@scure/bip32';
 import { encodeCashAddr } from '../chains/cashaddr';
-import { bytesToHex, concatBytes, u32be } from '../core/bytes';
+import { bytesToHex, concatBytes, hexToBytes, u32be } from '../core/bytes';
 import { EraSdkError } from '../core/errors';
 
 const base58check = createBase58check(sha256);
@@ -174,6 +174,96 @@ export function btcNestedSegwitAddressFromPublicKey(
  * built from the payment key alone is an *enterprise* address, a different
  * thing that cannot delegate its stake.
  */
+/**
+ * TON wallet address (`UQ…`) for the V4R2 contract — the version every ERA
+ * export ships.
+ *
+ * A TON address is not a hash of the key: it is the hash of the wallet
+ * CONTRACT the key would deploy. `StateInit{code, data}` is a cell with two
+ * refs, its representation hash is the account id, and the friendly form is
+ * `tag || workchain || account_id || crc16`, base64url.
+ *
+ * The code cell never varies, so only its hash and depth are needed rather
+ * than the whole BOC — the same two constants the firmware carries.
+ *
+ * V5R1 is deliberately absent: the firmware declares it, but no wallet-link
+ * profile exports it (every one clamps TON to derivation index 0), so an
+ * implementation here could not be exercised against a real export.
+ */
+export function tonAddressFromPublicKey(
+  publicKey32: Uint8Array,
+  options?: { bounceable?: boolean; workchain?: number },
+): string {
+  if (publicKey32.length !== 32) {
+    throw new EraSdkError('invalid-props', 'TON needs a 32-byte ed25519 key');
+  }
+  // seqno(32) || wallet_id(32) || pubkey(256) || plugins(1) = 321 bits.
+  const data = new Uint8Array(41);
+  const view = new DataView(data.buffer);
+  view.setUint32(4, TON_V4R2_WALLET_ID, false);
+  data.set(publicKey32, 8);
+  const dataHash = tonCellHash(data, 321, []);
+  const accountId = tonCellHash(new Uint8Array([0x30]), 5, [
+    { hash: TON_V4R2_CODE_HASH, depth: TON_V4R2_CODE_DEPTH },
+    { hash: dataHash, depth: 0 },
+  ]);
+
+  const raw = new Uint8Array(36);
+  raw[0] = options?.bounceable ? 0x11 : 0x51;
+  raw[1] = (options?.workchain ?? 0) & 0xff;
+  raw.set(accountId, 2);
+  const crc = tonCrc16(raw.subarray(0, 34));
+  raw[34] = crc >> 8;
+  raw[35] = crc & 0xff;
+  return base64urlnopad.encode(raw);
+}
+
+const TON_V4R2_WALLET_ID = 698983191;
+const TON_V4R2_CODE_DEPTH = 7;
+const TON_V4R2_CODE_HASH = hexToBytes(
+  'feb5ff6820e2ff0d9483e7e0d62c817d846789fb4ae580c878866d959dabd5c0',
+);
+
+/**
+ * The representation hash of one cell: `d1 || d2 || data || ref depths ||
+ * ref hashes`, sha256. `d1` counts refs, `d2` encodes the data length in
+ * half-bytes, and a cell whose bit count is not a multiple of eight carries a
+ * trailing 1 bit followed by zeros — the "completion tag".
+ */
+function tonCellHash(
+  data: Uint8Array,
+  bits: number,
+  refs: readonly { hash: Uint8Array; depth: number }[],
+): Uint8Array {
+  const byteLength = Math.ceil(bits / 8);
+  const incomplete = bits % 8 !== 0;
+  const body = data.slice(0, byteLength);
+  if (incomplete) {
+    const shift = 7 - (bits % 8);
+    const last = body[byteLength - 1] ?? 0;
+    body[byteLength - 1] = (last | (1 << shift)) & ((0xff << shift) & 0xff);
+  }
+  const head = new Uint8Array([refs.length, byteLength * 2 - (incomplete ? 1 : 0)]);
+  const depths = new Uint8Array(refs.length * 2);
+  refs.forEach((r, i) => {
+    depths[i * 2] = r.depth >> 8;
+    depths[i * 2 + 1] = r.depth & 0xff;
+  });
+  return sha256(concatBytes(head, body, depths, ...refs.map((r) => r.hash)));
+}
+
+/** CRC16-CCITT (XModem), TON's address checksum. */
+function tonCrc16(data: Uint8Array): number {
+  let crc = 0;
+  for (const byte of data) {
+    crc ^= byte << 8;
+    for (let i = 0; i < 8; i++) {
+      crc = crc & 0x8000 ? ((crc << 1) ^ 0x1021) & 0xffff : (crc << 1) & 0xffff;
+    }
+  }
+  return crc;
+}
+
 export function cardanoBaseAddress(paymentKey32: Uint8Array, stakeKey32: Uint8Array): string {
   if (paymentKey32.length !== 32 || stakeKey32.length !== 32) {
     throw new EraSdkError('invalid-props', 'cardano base address needs two 32-byte keys');

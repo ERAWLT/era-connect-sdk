@@ -22,6 +22,7 @@ import {
   serializeExtendedPublicKey,
   solanaAddressFromPublicKey,
   suiAddressFromPublicKey,
+  tonAddressFromPublicKey,
   TPUB_VERSION,
   tronAddressFromPublicKey,
   VPUB_VERSION,
@@ -502,6 +503,20 @@ export class TonAccountView {
   /** 32-byte Ed25519 public key — the signer for both wallet-contract versions. */
   get publicKey(): Uint8Array {
     return requireKey(this.entry, 32);
+  }
+
+  /**
+   * The V4R2 wallet address — the contract this key would deploy, not a hash
+   * of the key itself. Non-bounceable (`UQ…`) by default, which is the form a
+   * wallet shows for receiving.
+   */
+  get address(): string {
+    return tonAddressFromPublicKey(this.publicKey);
+  }
+
+  /** The same account under the bounceable tag (`EQ…`). */
+  get bounceableAddress(): string {
+    return tonAddressFromPublicKey(this.publicKey, { bounceable: true });
   }
 
   get name(): string | undefined {

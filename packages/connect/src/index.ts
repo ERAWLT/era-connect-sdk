@@ -197,6 +197,7 @@ export {
   p2pkhAddressFromPublicKey,
   solanaAddressFromPublicKey,
   suiAddressFromPublicKey,
+  tonAddressFromPublicKey,
   tronAddressFromPublicKey,
   xrpAddressFromPublicKey,
 } from './accounts/derive';
