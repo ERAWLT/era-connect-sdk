@@ -14,6 +14,7 @@ import {
   cardanoSoftDerivePath,
   cosmosAddressFromPublicKey,
   derivePublicKey,
+  ethermintAddressFromPublicKey,
   nestedSegwitAddressFromPublicKey,
   p2pkhAddressFromPublicKey,
   evmAddressFromPublicKey,
@@ -107,7 +108,11 @@ function classify(path: readonly PathLevel[]): AccountChain {
   if (p0.index === 44 && p1.index === 607) return 'ton';
   if (p0.index === 1852 && p1.index === 1815) return 'cardano';
   if (p0.index === 44 && p1.index === 784) return 'sui';
-  if (p0.index === 44 && p1.index === 118) return 'cosmos';
+  // The non-118 Cosmos zones, each on its own SLIP-44 coin type. The
+  // Ethermint zones are deliberately absent: they sit on m/44'/60' and stay
+  // classified as `evm`, because that is what their key is — `cosmos('inj')`
+  // reaches them through the EVM account.
+  if (p0.index === 44 && COSMOS_SLIP44.has(p1.index)) return 'cosmos';
   if (p0.index === 44 && p1.index === 144) return 'xrp';
   return 'unknown';
 }
@@ -614,10 +619,87 @@ export class SolanaAccountView {
  * sign with `m/44'/60'` keys, so they come back as the `evm` account, not
  * this one.
  */
+/** One Cosmos SDK zone, as the firmware's `CosmosCoinInfo` table declares it. */
+export interface CosmosChainInfo {
+  /** Stable lowercase id, e.g. `osmosis`, `terra-classic`. */
+  readonly id: string;
+  /** bech32 human-readable part, e.g. `osmo`. */
+  readonly hrp: string;
+  /** SLIP-44 coin type the zone's account is derived under. */
+  readonly slip44: number;
+  /**
+   * True for Injective, Evmos and Dymension: EVM keys wearing a Cosmos coat.
+   * Their account sits at `m/44'/60'` and the bech32 payload is the ETHEREUM
+   * address, not the `sha256+ripemd160` hash every other zone uses.
+   */
+  readonly ethermint?: boolean;
+}
+
+/**
+ * Every Cosmos zone the device can export a key for, transcribed from
+ * `CosmosCoinInfo.cpp`. Twenty-four of them share SLIP-44 118, so the export
+ * carries ONE key for all of them and the HRP is what separates the
+ * addresses — enumerate this table, never the export's entries, or a caller
+ * sees twenty-two identical rows.
+ */
+export const COSMOS_CHAINS: readonly CosmosChainInfo[] = [
+  { id: 'cosmos', hrp: 'cosmos', slip44: 118 },
+  { id: 'osmosis', hrp: 'osmo', slip44: 118 },
+  { id: 'celestia', hrp: 'celestia', slip44: 118 },
+  { id: 'juno', hrp: 'juno', slip44: 118 },
+  { id: 'akash', hrp: 'akash', slip44: 118 },
+  { id: 'stride', hrp: 'stride', slip44: 118 },
+  { id: 'axelar', hrp: 'axelar', slip44: 118 },
+  { id: 'neutron', hrp: 'neutron', slip44: 118 },
+  { id: 'dydx', hrp: 'dydx', slip44: 118 },
+  { id: 'noble', hrp: 'noble', slip44: 118 },
+  { id: 'sei', hrp: 'sei', slip44: 118 },
+  { id: 'kujira', hrp: 'kujira', slip44: 118 },
+  { id: 'stargaze', hrp: 'stars', slip44: 118 },
+  { id: 'agoric', hrp: 'agoric', slip44: 118 },
+  { id: 'secret', hrp: 'secret', slip44: 529 },
+  { id: 'cronos', hrp: 'cro', slip44: 394 },
+  { id: 'kava', hrp: 'kava', slip44: 459 },
+  { id: 'terra', hrp: 'terra', slip44: 330 },
+  { id: 'thorchain', hrp: 'thor', slip44: 931 },
+  { id: 'injective', hrp: 'inj', slip44: 60, ethermint: true },
+  { id: 'evmos', hrp: 'evmos', slip44: 60, ethermint: true },
+  { id: 'dymension', hrp: 'dym', slip44: 60, ethermint: true },
+  { id: 'babylon', hrp: 'bbn', slip44: 118 },
+  { id: 'neutaro', hrp: 'neutaro', slip44: 118 },
+  { id: 'terra-classic', hrp: 'terra', slip44: 330 },
+  { id: 'shentu', hrp: 'shentu', slip44: 118 },
+  { id: 'persistence', hrp: 'persistence', slip44: 118 },
+  { id: 'sommelier', hrp: 'somm', slip44: 118 },
+  { id: 'irisnet', hrp: 'iaa', slip44: 118 },
+  { id: 'regen', hrp: 'regen', slip44: 118 },
+  { id: 'umee', hrp: 'umee', slip44: 118 },
+  { id: 'quicksilver', hrp: 'quick', slip44: 118 },
+  { id: 'gravity-bridge', hrp: 'gravity', slip44: 118 },
+];
+
+const COSMOS_BY_ID = new Map(COSMOS_CHAINS.map((c) => [c.id, c]));
+
+/** Coin types that mean "a Cosmos account", Ethermint's 60 excluded. */
+const COSMOS_SLIP44 = new Set(
+  COSMOS_CHAINS.filter((c) => !c.ethermint).map((c) => c.slip44),
+);
+
+/** Look up a zone by id, or throw with the id that was not found. */
+export function cosmosChain(id: string): CosmosChainInfo {
+  const found = COSMOS_BY_ID.get(id);
+  if (!found) {
+    throw new EraSdkError('invalid-props', `unknown Cosmos chain "${id}"`);
+  }
+  return found;
+}
+
 export class CosmosAccountView {
   constructor(
     private readonly entry: RawAccountEntry,
     private readonly resolvedXfp: number,
+    /** The zone this view was resolved for, when it was asked for by id. */
+    readonly chain?: CosmosChainInfo,
   ) {}
 
   get xfp(): string {
@@ -638,9 +720,29 @@ export class CosmosAccountView {
     return derivePublicKey(requireKey(this.entry, 33), withChainCode(this.entry), 0, index);
   }
 
-  /** Bech32 address under the zone's own HRP, e.g. `{ prefix: 'osmo' }`. */
-  deriveAddress(index: number, options: { prefix: string }): string {
-    return cosmosAddressFromPublicKey(this.derivePublicKey(index), options.prefix);
+  /**
+   * Bech32 address for this account.
+   *
+   * Pass `{ chain: 'osmosis' }` to name a zone from the registry — that also
+   * picks the right hashing, which matters for Injective, Evmos and Dymension
+   * whose payload is the Ethereum address rather than `hash160`. Pass
+   * `{ prefix }` for a zone the registry does not carry; that always uses the
+   * classic recipe. A view resolved through `cosmos('osmosis')` already knows
+   * its zone and needs no options at all.
+   */
+  deriveAddress(index: number, options?: { prefix?: string; chain?: string }): string {
+    const zone = options?.chain ? cosmosChain(options.chain) : this.chain;
+    const hrp = options?.prefix ?? zone?.hrp;
+    if (!hrp) {
+      throw new EraSdkError(
+        'invalid-props',
+        'name a Cosmos zone: deriveAddress(i, { chain }) or { prefix }',
+      );
+    }
+    const key = this.derivePublicKey(index);
+    return options?.prefix === undefined && zone?.ethermint
+      ? ethermintAddressFromPublicKey(key, hrp)
+      : cosmosAddressFromPublicKey(key, hrp);
   }
 }
 
@@ -881,9 +983,35 @@ export class EraAccounts {
   }
 
   /** The Cosmos account (`m/44'/118'/0'`), if the export carries one. */
-  cosmos(): CosmosAccountView | undefined {
-    const entry = this.raw.entries.find((e) => classify(e.path) === 'cosmos');
-    return entry ? new CosmosAccountView(entry, this.resolveXfp(entry)) : undefined;
+  /**
+   * A Cosmos account. With no argument this is the shared SLIP-44 118 entry —
+   * the one key that serves Cosmos Hub, Osmosis, Celestia and nineteen more.
+   * Name a zone (`cosmos('kava')`) to resolve the entry that zone is actually
+   * derived under: the non-118 chains have their own coin types, and the
+   * Ethermint zones are served by the EVM account.
+   */
+  cosmos(chainId?: string): CosmosAccountView | undefined {
+    if (chainId === undefined) {
+      const entry = this.raw.entries.find((e) => classify(e.path) === 'cosmos');
+      return entry ? new CosmosAccountView(entry, this.resolveXfp(entry)) : undefined;
+    }
+    const zone = cosmosChain(chainId);
+    const entry = zone.ethermint
+      ? this.raw.entries.find(isEvmAccount)
+      : this.raw.entries.find(
+          (e) =>
+            e.path.length === 3 &&
+            e.path[0]!.index === 44 &&
+            e.path[0]!.hardened &&
+            e.path[1]!.index === zone.slip44 &&
+            e.path[1]!.hardened,
+        );
+    return entry ? new CosmosAccountView(entry, this.resolveXfp(entry), zone) : undefined;
+  }
+
+  /** Every Cosmos zone this export can actually serve an address for. */
+  cosmosChains(): readonly CosmosChainInfo[] {
+    return COSMOS_CHAINS.filter((c) => this.cosmos(c.id) !== undefined);
   }
 
   /** The XRP account (`m/44'/144'/0'`), if the export carries one. */

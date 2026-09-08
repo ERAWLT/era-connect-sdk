@@ -151,6 +151,21 @@ export function btcNestedSegwitAddressFromPublicKey(
  * witness-version prefix (that is a segwit thing, not a Cosmos one). Every
  * zone carries its own HRP over the same key, so `prefix` is the caller's.
  */
+/**
+ * Ethermint bech32 address (Injective, Evmos, Dymension).
+ *
+ * These zones are EVM keys wearing a Cosmos coat: the payload is the ETHEREUM
+ * address — `keccak256(uncompressed[1..])[-20:]` — under the zone's own HRP,
+ * NOT the `sha256+ripemd160` hash every other Cosmos chain uses. Encoding one
+ * with the classic recipe produces a well-formed `inj1…` for a different
+ * account entirely, which is why the two live in separate functions rather
+ * than behind a flag.
+ */
+export function ethermintAddressFromPublicKey(publicKey33: Uint8Array, prefix: string): string {
+  const payload = keccak_256(uncompressed(publicKey33).slice(1)).slice(12);
+  return bech32.encode(prefix, bech32.toWords(payload));
+}
+
 export function cosmosAddressFromPublicKey(publicKey33: Uint8Array, prefix: string): string {
   return bech32.encode(prefix, bech32.toWords(hash160(publicKey33)));
 }

@@ -155,12 +155,21 @@ export class EraConnect {
 // Public types & modules
 // ---------------------------------------------------------------------------
 
-export type { AccountChain, AccountKey, BtcPurpose, DeviceInfo, UtxoChain } from './accounts/accounts';
+export type {
+  AccountChain,
+  AccountKey,
+  BtcPurpose,
+  CosmosChainInfo,
+  DeviceInfo,
+  UtxoChain,
+} from './accounts/accounts';
 export {
   BchAccountView,
   BtcAccountView,
   CardanoAccountView,
+  COSMOS_CHAINS,
   CosmosAccountView,
+  cosmosChain,
   EraAccounts,
   EvmAccountView,
   SolanaAccountView,
@@ -180,6 +189,7 @@ export {
   btcP2wpkhAddressFromPublicKey,
   btcTaprootAddressFromPublicKey,
   cosmosAddressFromPublicKey,
+  ethermintAddressFromPublicKey,
   evmAddressFromPublicKey,
   nestedSegwitAddressFromPublicKey,
   p2pkhAddressFromPublicKey,
