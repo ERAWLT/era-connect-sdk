@@ -115,7 +115,7 @@ describe('Cosmos addresses', () => {
   });
 
   it('lists only the zones this export can actually serve', () => {
-    const ids = wallet.cosmosChains().map((c) => c.id);
+    const ids = wallet.availableCosmosChains().map((c) => c.id);
     expect(ids).toContain('cosmos');
     expect(ids).toContain('osmosis');
     expect(ids).toContain('kava');

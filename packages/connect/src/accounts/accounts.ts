@@ -1157,7 +1157,7 @@ export class EraAccounts {
   }
 
   /** Every Cosmos zone this export can actually serve an address for. */
-  cosmosChains(): readonly CosmosChainInfo[] {
+  availableCosmosChains(): readonly CosmosChainInfo[] {
     return COSMOS_CHAINS.filter((c) => this.cosmos(c.id) !== undefined);
   }
 

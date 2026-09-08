@@ -14,7 +14,7 @@ dozen identical rows for the same address.
 - `cosmos('kava')` resolves the entry that zone is actually derived under —
   the six non-118 chains have their own coin types (Secret 529, Cronos 394,
   Kava 459, Terra and Terra Classic 330, THORChain 931).
-- `cosmosChains()` lists only the zones a given export can serve.
+- `availableCosmosChains()` lists only the zones a given export can serve.
 - `deriveAddress(i, { chain })` picks the hashing as well as the HRP;
   `{ prefix }` stays the escape hatch for zones the registry does not carry and
   always means the classic recipe.
