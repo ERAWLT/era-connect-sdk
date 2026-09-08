@@ -161,6 +161,7 @@ export type {
   BtcPurpose,
   CosmosChainInfo,
   DeviceInfo,
+  SolanaScheme,
   UtxoChain,
 } from './accounts/accounts';
 export {

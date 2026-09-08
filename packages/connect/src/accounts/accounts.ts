@@ -581,6 +581,13 @@ export class SuiAccountView {
  * pre-derives hardened accounts (`m/44'/501'/idx'`) and each entry IS a
  * signer. The public key, base58, IS the address.
  */
+/**
+ * The three Solana derivation schemes, told apart by path depth:
+ * `single` = `m/44'/501'`, `account` = `m/44'/501'/<n>'`,
+ * `sub-account` = `m/44'/501'/<n>'/0'`.
+ */
+export type SolanaScheme = 'single' | 'account' | 'sub-account';
+
 export class SolanaAccountView {
   constructor(
     private readonly entry: RawAccountEntry,
@@ -595,7 +602,31 @@ export class SolanaAccountView {
     return formatPath([...this.entry.path]);
   }
 
-  /** The hardened account index (third path level). */
+  /**
+   * Which of the three Solana derivation schemes this entry belongs to.
+   *
+   * The firmware declares all three under the same `Derivation::Solana` and
+   * distinguishes them by PATH DEPTH alone — "Single Account Path"
+   * `m/44'/501'`, "Account-based Path" `m/44'/501'/<n>'`, and "Sub-account
+   * Path" `m/44'/501'/<n>'/0'`. Without this, three entries all report index
+   * 0 with three different addresses, and two entries report each of 1..4.
+   */
+  get scheme(): SolanaScheme {
+    switch (this.entry.path.length) {
+      case 2:
+        return 'single';
+      case 3:
+        return 'account';
+      default:
+        return 'sub-account';
+    }
+  }
+
+  /**
+   * The hardened account index (third path level), 0 for the single-account
+   * path which has no such level. Unique only WITHIN a scheme — read it
+   * together with [scheme].
+   */
   get index(): number {
     return this.entry.path[2]?.index ?? 0;
   }
@@ -976,10 +1007,21 @@ export class EraAccounts {
   }
 
   /** All pre-derived Solana signers (usually `m/44'/501'/0'..9'`). */
-  solana(): SolanaAccountView[] {
-    return this.raw.entries
+  /**
+   * The Solana accounts an export carries — ALREADY DERIVED by the device,
+   * one entry per key. Ed25519 hardened paths cannot be walked from a parent
+   * public key, so there is nothing to derive here and nothing beyond what the
+   * export shipped.
+   *
+   * Pass `scheme` to take one derivation scheme: the device ships all three,
+   * so an unfiltered list holds several entries reporting the same `index`
+   * with different addresses.
+   */
+  solana(options?: { scheme?: SolanaScheme }): SolanaAccountView[] {
+    const views = this.raw.entries
       .filter((e) => classify(e.path) === 'solana' && e.publicKey?.length === 32)
       .map((e) => new SolanaAccountView(e, this.resolveXfp(e)));
+    return options?.scheme ? views.filter((v) => v.scheme === options.scheme) : views;
   }
 
   /** The Cosmos account (`m/44'/118'/0'`), if the export carries one. */
