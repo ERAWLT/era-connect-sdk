@@ -4,6 +4,7 @@ import { formatPath, parsePath, pathEquals, xfpToHex } from '../registry/keypath
 import type { RawAccountEntry, RawMultiAccounts } from '../registry/multi-accounts';
 import { parseMultiAccountsUr } from '../registry/multi-accounts';
 import type { Ur } from '../ur/ur';
+import type { Bech32Hrp } from './derive';
 import {
   bchAddressFromPublicKey,
   btcNestedSegwitAddressFromPublicKey,
@@ -13,6 +14,8 @@ import {
   cardanoSoftDerivePath,
   cosmosAddressFromPublicKey,
   derivePublicKey,
+  nestedSegwitAddressFromPublicKey,
+  p2pkhAddressFromPublicKey,
   evmAddressFromPublicKey,
   serializeExtendedPublicKey,
   solanaAddressFromPublicKey,
@@ -41,6 +44,14 @@ export type AccountChain =
    */
   | 'btc'
   | 'bch'
+  /**
+   * The Bitcoin-like altcoins the device exports, at their own MAINNET coin
+   * types — Litecoin 2', Dogecoin 3', Dash 5'. Unlike coin type 1' these are
+   * unambiguous, so attribution needs no caller intent.
+   */
+  | 'litecoin'
+  | 'dogecoin'
+  | 'dash'
   | 'solana'
   | 'tron'
   | 'ton'
@@ -86,6 +97,11 @@ function classify(path: readonly PathLevel[]): AccountChain {
     return 'btc';
   }
   if (p0.index === 44 && p1.index === 145) return 'bch';
+  if (p1.index === 2 && (p0.index === 84 || p0.index === 49 || p0.index === 44)) {
+    return 'litecoin';
+  }
+  if (p0.index === 44 && p1.index === 3) return 'dogecoin';
+  if (p0.index === 44 && p1.index === 5) return 'dash';
   if (p0.index === 44 && p1.index === 501) return 'solana';
   if (p0.index === 44 && p1.index === 195) return 'tron';
   if (p0.index === 44 && p1.index === 607) return 'ton';
@@ -317,6 +333,106 @@ export class TronAccountView {
 }
 
 /** Bitcoin Cash view: `m/44'/145'/0'`, CashAddr P2PKH addresses. */
+/** The Bitcoin-like altcoins, which differ only in constants. */
+export type UtxoChain = 'litecoin' | 'dogecoin' | 'dash';
+
+interface UtxoChainParams {
+  readonly coinType: number;
+  /** base58check version byte for P2PKH — Litecoin 48 ("L"), Doge 30 ("D"), Dash 76 ("X"). */
+  readonly p2pkh: number;
+  /** base58check version byte for P2SH — Litecoin 50 ("M"), Doge 22, Dash 16. */
+  readonly p2sh: number;
+  /** Segwit HRP, where the chain has segwit at all. */
+  readonly hrp?: Bech32Hrp;
+  /** BIP purposes the chain's derivation vector actually declares, best first. */
+  readonly purposes: readonly number[];
+}
+
+/**
+ * Taken from each coin's `CoinInfo` in the firmware, not from a registry:
+ * these version bytes are the only thing separating one chain's addresses
+ * from another's, so they are pinned to the device that produces the keys.
+ */
+const UTXO_CHAINS: Record<UtxoChain, UtxoChainParams> = {
+  litecoin: { coinType: 2, p2pkh: 48, p2sh: 50, hrp: 'ltc', purposes: [84, 49, 44] },
+  dogecoin: { coinType: 3, p2pkh: 30, p2sh: 22, purposes: [44] },
+  dash: { coinType: 5, p2pkh: 76, p2sh: 16, purposes: [44] },
+};
+
+/**
+ * A Litecoin, Dogecoin or Dash account.
+ *
+ * The SDK signed PSBTs for these three long before it could name an address
+ * for them: `classify` returned `unknown` and there was no view, so a caller
+ * holding a perfectly good Litecoin account had no way to ask this SDK where
+ * to receive. The encoding is the same machinery Bitcoin already uses, under
+ * different version bytes.
+ */
+export class UtxoAccountView {
+  constructor(
+    private readonly entry: RawAccountEntry,
+    private readonly resolvedXfp: number,
+    readonly chain: UtxoChain,
+  ) {}
+
+  private get params(): UtxoChainParams {
+    return UTXO_CHAINS[this.chain];
+  }
+
+  /** The BIP purpose this account was exported under — 84, 49 or 44. */
+  get purpose(): number {
+    return this.entry.path[0]!.index;
+  }
+
+  get xfp(): string {
+    return xfpToHex(this.resolvedXfp);
+  }
+
+  get accountPath(): string {
+    return formatPath([...this.entry.path]);
+  }
+
+  receivePath(index: number): string {
+    return `${this.accountPath}/0/${index}`;
+  }
+
+  changePath(index: number): string {
+    return `${this.accountPath}/1/${index}`;
+  }
+
+  derivePublicKey(index: number, options?: { change?: boolean }): Uint8Array {
+    return derivePublicKey(
+      requireKey(this.entry, 33),
+      withChainCode(this.entry),
+      options?.change ? 1 : 0,
+      index,
+    );
+  }
+
+  /** The address at receive (or `change:`) `index`, in this account's script type. */
+  deriveAddress(index: number, options?: { change?: boolean }): string {
+    const child = this.derivePublicKey(index, options);
+    const { p2pkh, p2sh, hrp } = this.params;
+    switch (this.purpose) {
+      case 84:
+        if (!hrp) break;
+        return btcP2wpkhAddressFromPublicKey(child, hrp);
+      case 49:
+        return nestedSegwitAddressFromPublicKey(child, p2sh);
+      case 44:
+        return p2pkhAddressFromPublicKey(child, p2pkh);
+    }
+    throw new EraSdkError(
+      'invalid-props',
+      `${this.chain} has no address encoding for BIP purpose ${this.purpose}`,
+    );
+  }
+
+  xpub(): string {
+    return extendedKeyOf(this.entry);
+  }
+}
+
 export class BchAccountView {
   constructor(
     private readonly entry: RawAccountEntry,
@@ -699,6 +815,39 @@ export class EraAccounts {
   bch(): BchAccountView | undefined {
     const entry = this.raw.entries.find((e) => classify(e.path) === 'bch');
     return entry ? new BchAccountView(entry, this.resolveXfp(entry)) : undefined;
+  }
+
+  /**
+   * A Litecoin, Dogecoin or Dash account. `purpose` picks the script type
+   * where the chain has more than one — Litecoin is exported as BIP-84 by
+   * every ERA profile, but a third-party profile may carry 49 or 44 instead,
+   * so the default is "whichever the export actually holds", best first.
+   */
+  utxo(chain: UtxoChain, options?: { purpose?: number }): UtxoAccountView | undefined {
+    const wanted = options?.purpose;
+    const purposes = wanted === undefined ? UTXO_CHAINS[chain].purposes : [wanted];
+    for (const purpose of purposes) {
+      const entry = this.raw.entries.find(
+        (e) => classify(e.path) === chain && e.path.length === 3 && e.path[0]!.index === purpose,
+      );
+      if (entry) return new UtxoAccountView(entry, this.resolveXfp(entry), chain);
+    }
+    return undefined;
+  }
+
+  /** The Litecoin account — BIP-84 native segwit unless the export says otherwise. */
+  litecoin(options?: { purpose?: number }): UtxoAccountView | undefined {
+    return this.utxo('litecoin', options);
+  }
+
+  /** The Dogecoin account (`m/44'/3'/0'`, legacy P2PKH — the chain has no segwit). */
+  dogecoin(): UtxoAccountView | undefined {
+    return this.utxo('dogecoin');
+  }
+
+  /** The Dash account (`m/44'/5'/0'`, legacy P2PKH — the chain has no segwit). */
+  dash(): UtxoAccountView | undefined {
+    return this.utxo('dash');
   }
 
   /** The TON account (linked via the Tonkeeper-style `crypto-hdkey` export). */

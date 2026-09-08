@@ -58,9 +58,36 @@ export function bchAddressFromPublicKey(
 /** P2WPKH (witness v0) bech32 address. */
 export function btcP2wpkhAddressFromPublicKey(
   publicKey33: Uint8Array,
-  hrp: 'bc' | 'tb' = 'bc',
+  hrp: Bech32Hrp = 'bc',
 ): string {
   return bech32.encode(hrp, [0, ...bech32.toWords(hash160(publicKey33))]);
+}
+
+/**
+ * The segwit human-readable parts the device can produce. Litecoin is here
+ * because it is the one other chain in the export with a native-segwit
+ * derivation (`m/84'/2'`); Dogecoin and Dash have no segwit at all.
+ */
+export type Bech32Hrp = 'bc' | 'tb' | 'ltc';
+
+/**
+ * P2PKH base58check under an explicit version byte. Bitcoin is 0x00 mainnet /
+ * 0x6f testnet, Litecoin 48, Dogecoin 30, Dash 76 — the numbers the firmware
+ * carries in each coin's `CoinInfo`. A version byte is the only thing that
+ * separates these chains' addresses, so it is a parameter rather than a
+ * per-chain copy of the same six lines.
+ */
+export function p2pkhAddressFromPublicKey(publicKey33: Uint8Array, version: number): string {
+  return base58check.encode(concatBytes(new Uint8Array([version]), hash160(publicKey33)));
+}
+
+/** P2SH-P2WPKH base58check under an explicit P2SH version byte. */
+export function nestedSegwitAddressFromPublicKey(
+  publicKey33: Uint8Array,
+  version: number,
+): string {
+  const redeemScript = concatBytes(new Uint8Array([0x00, 0x14]), hash160(publicKey33));
+  return base58check.encode(concatBytes(new Uint8Array([version]), hash160(redeemScript)));
 }
 
 /**
@@ -108,9 +135,7 @@ function bytesToBigIntBE(bytes: Uint8Array): bigint {
 
 /** Legacy P2PKH base58check address (`1...`). */
 export function btcP2pkhAddressFromPublicKey(publicKey33: Uint8Array, testnet = false): string {
-  return base58check.encode(
-    concatBytes(new Uint8Array([testnet ? 0x6f : 0x00]), hash160(publicKey33)),
-  );
+  return p2pkhAddressFromPublicKey(publicKey33, testnet ? 0x6f : 0x00);
 }
 
 /** Nested segwit (P2SH-P2WPKH) base58check address (`3...`). */
@@ -118,10 +143,7 @@ export function btcNestedSegwitAddressFromPublicKey(
   publicKey33: Uint8Array,
   testnet = false,
 ): string {
-  const redeemScript = concatBytes(new Uint8Array([0x00, 0x14]), hash160(publicKey33));
-  return base58check.encode(
-    concatBytes(new Uint8Array([testnet ? 0xc4 : 0x05]), hash160(redeemScript)),
-  );
+  return nestedSegwitAddressFromPublicKey(publicKey33, testnet ? 0xc4 : 0x05);
 }
 
 /**
