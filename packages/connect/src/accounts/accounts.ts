@@ -96,6 +96,31 @@ function classify(path: readonly PathLevel[]): AccountChain {
   return 'unknown';
 }
 
+/**
+ * An EVM ACCOUNT, as opposed to anything else that starts `m/44'/60'`.
+ *
+ * `classify` reads only the first two path levels, and three different things
+ * share those: the standard account `m/44'/60'/<account>'` (depth 3, with a
+ * chain code), the Ledger Live entries `m/44'/60'/<n>'/0/0` (depth 5, fully
+ * derived leaves) and the Ethermint keys that Injective, Evmos and Dymension
+ * are exported under, which sit at `m/44'/60'/0'/0/0` and carry no chain code
+ * at all.
+ *
+ * Without this, `evm()` could hand back one of those leaves — and a view over
+ * a leaf reports a leaf path as its account path and derives two levels BELOW
+ * it, producing a real key at a nonsense path. A wrong address that looks
+ * entirely plausible is the worst failure this SDK can have, so the account
+ * shape is checked rather than assumed.
+ *
+ * Depth is the whole test. Key material deliberately is NOT: an entry with no
+ * public key and no chain code still resolves its xfp for signing, which is
+ * reference behaviour the views depend on, and `withChainCode` already refuses
+ * derivation on such an entry with a typed error.
+ */
+function isEvmAccount(entry: RawAccountEntry): boolean {
+  return classify(entry.path) === 'evm' && entry.path.length === 3;
+}
+
 function withChainCode(entry: RawAccountEntry): Uint8Array {
   if (!entry.chainCode) {
     throw new EraSdkError(
@@ -618,8 +643,8 @@ export class EraAccounts {
   evm(): EvmAccountView | undefined {
     const entry =
       this.raw.entries.find(
-        (e) => classify(e.path) === 'evm' && (e.note === null || e.note === 'account.standard'),
-      ) ?? this.raw.entries.find((e) => classify(e.path) === 'evm');
+        (e) => isEvmAccount(e) && (e.note === null || e.note === 'account.standard'),
+      ) ?? this.raw.entries.find(isEvmAccount);
     return entry ? new EvmAccountView(entry, this.resolveXfp(entry)) : undefined;
   }
 

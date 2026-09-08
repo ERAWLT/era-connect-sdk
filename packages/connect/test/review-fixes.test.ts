@@ -13,6 +13,7 @@ import {
   cbUint,
   mapGet,
 } from '../src/cbor/model';
+import { evmAddressFromPublicKey } from '../src/accounts/derive';
 import { concatBytes, hexToBytes, utf8Decode } from '../src/core/bytes';
 import { EraAccounts, EraConnect, EraSdkError, Ur, WALLET_UR_TYPES } from '../src/index';
 import { gunzipCapped, gzipCompress } from '../src/tron-proto/gzip';
@@ -187,6 +188,68 @@ describe('wallet exports (review: keyless entries, BTC purposes)', () => {
       ),
     ),
   );
+
+  /**
+   * `classify` reads only the first two path levels, and three different things
+   * start `m/44'/60'`: the account itself, the Ledger Live leaves, and the
+   * Ethermint keys Injective / Evmos / Dymension are exported under. A view
+   * built over a leaf reports the leaf as its account path and derives two
+   * levels below it — a real key at a nonsense path, which is a wrong address
+   * that looks entirely plausible.
+   */
+  describe('evm() answers with an ACCOUNT, never a leaf under it', () => {
+    const leafLevels: [number, boolean][] = [
+      [44, true],
+      [60, true],
+      [0, true],
+      [0, false],
+      [0, false],
+    ];
+
+    function walletOfEntries(entries: ReturnType<typeof entryOf>[]) {
+      return EraAccounts.fromUr(
+        new Ur(
+          'crypto-multi-accounts',
+          cborEncode(
+            cbMap([
+              [1, cbUint(master.fingerprint >>> 0)],
+              [2, cbArray(entries)],
+            ]),
+          ),
+        ),
+      );
+    }
+
+    it('an Ethermint-shaped leaf alone is not an EVM account', () => {
+      const only = walletOfEntries([
+        entryOf(leafLevels, 0x55555555, master.derive("m/44'/60'/0'/0/0")),
+      ]);
+      expect(only.evm()).toBeUndefined();
+    });
+
+    it('a Ledger Live leaf never shadows the real account', () => {
+      const both = walletOfEntries([
+        entryOf(leafLevels, 0x55555555, master.derive("m/44'/60'/0'/0/0")),
+        entryOf(
+          [
+            [44, true],
+            [60, true],
+            [0, true],
+          ],
+          0x66666666,
+          master.derive("m/44'/60'/0'"),
+        ),
+      ]);
+      const view = both.evm()!;
+      expect(view.accountPath).toBe("m/44'/60'/0'");
+      // The address the account really answers, derived at m/44'/60'/0'/0/0 —
+      // which is exactly where the leaf sits, so a view over the leaf would
+      // have derived m/44'/60'/0'/0/0/0/0 and answered something else.
+      expect(view.deriveAddress(0)).toBe(
+        evmAddressFromPublicKey(master.derive("m/44'/60'/0'/0/0").publicKey!),
+      );
+    });
+  });
 
   it('an entry without a public key still resolves its xfp (reference parity)', () => {
     expect(wallet.xfpFor("m/44'/60'/0'")).toBe('11111111');
