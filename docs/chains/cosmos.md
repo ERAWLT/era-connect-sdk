@@ -26,50 +26,64 @@ cosmos.accountPath;                        // "m/44'/118'/0'"
 cosmos.xfp;                                // what the sign request must carry
 cosmos.pathFor(0);                         // "m/44'/118'/0'/0/0"
 cosmos.derivePublicKey(0);                 // 33-byte compressed secp256k1
-cosmos.deriveAddress(0, { prefix: 'cosmos' }); // 'cosmos1…'
-cosmos.deriveAddress(0, { prefix: 'osmo' });   // 'osmo1…' — the SAME key
+cosmos.deriveAddress(0, { chain: 'cosmos' });   // 'cosmos1…'
+cosmos.deriveAddress(0, { chain: 'osmosis' });  // 'osmo1…' — the SAME key
 ```
 
 The bech32 prefix is a property of the zone, not of the key: one key produces
 `cosmos1…`, `osmo1…` and `celestia1…` from the same
 `ripemd160(sha256(compressed pubkey))` payload. There is therefore no correct
-default, and `deriveAddress` requires a `prefix` rather than inventing one.
+default, and `deriveAddress` needs the zone named rather than inventing one.
 
-Ethermint zones are the exception and are not this account: they sign with
-`m/44'/60'` keys, so they come back from `accounts.evm()`.
+## The zone registry
 
-`cosmos()` means `m/44'/118'` and nothing else. An account exported under
-another coin type — Terra's 330, Kava's 459, Secret's 529 — is a family this
-SDK does not classify: `cosmos()` returns `undefined` and the entry's `chain`
-reads `'unknown'`. Take those out of `accounts.keys` by path, derive the
-`0/index` child with your own BIP-32 library from the entry's `publicKey` +
-`chainCode`, and hand the result to `cosmosAddressFromPublicKey`, which is
-exported from the package root for exactly this:
+`COSMOS_CHAINS` is every zone the device can export a key for, with its HRP and
+SLIP-44 coin type. Twenty-four of them share coin type 118, so the export
+carries ONE key for all of them — **enumerate the registry, never the export's
+entries**, or the same address appears two dozen times.
 
 ```ts
-import { cosmosAddressFromPublicKey } from '@hwlt/era-connect';
+import { COSMOS_CHAINS, cosmosChain } from '@hwlt/era-connect';
 
-const entry = accounts.keys.find((k) => k.path === "m/44'/330'/0'")!;
-const child = bip32                        // YOUR BIP-32 library
-  .fromPublicKey(entry.publicKey!, entry.chainCode!)
-  .derive(0).derive(0).publicKey;
-
-const request = era.cosmos.generateSignRequest({
-  signData, dataType: CosmosChain.DataType.direct,
-  path: `${entry.path}/0/0`,
-  xfp: accounts.xfpFor(entry.path),            // throws, never a silent zero
-  address: cosmosAddressFromPublicKey(child, 'terra'),
-});
+COSMOS_CHAINS.length;                  // 33
+cosmosChain('osmosis');                // { id, hrp: 'osmo', slip44: 118 }
+accounts.availableCosmosChains();      // only the zones THIS export can serve
 ```
 
+Zones with their own coin type — Secret 529, Cronos 394, Kava 459, Terra and
+Terra Classic 330, THORChain 931 — are resolved by naming them, which picks the
+entry they are actually derived under:
+
 ```ts
+const kava = accounts.cosmos('kava')!;  // "m/44'/459'/0'"
+kava.deriveAddress(0);                  // 'kava1…' — a bound view needs no options
+```
+
+`{ prefix }` remains for a zone the registry does not carry. It always means
+the classic `hash160` recipe.
+
+## Ethermint zones
+
+Injective, Evmos and Dymension are EVM keys wearing a Cosmos coat: their
+account is `m/44'/60'` and the bech32 payload is the **Ethereum** address, not
+the `sha256+ripemd160` hash every other zone uses. Naming the zone picks both
+the right entry and the right hashing:
+
+```ts
+accounts.cosmos('injective')!.deriveAddress(0);  // 'inj1…'
+```
+
+`ethermintAddressFromPublicKey` is exported for callers holding a key of their
+own. Encoding an Ethermint zone with `cosmosAddressFromPublicKey` produces a
+well-formed `inj1…` for a different account entirely.
+ts
 // 1 · request — Amino or Direct SignDoc bytes from your Cosmos tooling
 const request = era.cosmos.generateSignRequest({
   signData: aminoJsonBytes,            // canonical JSON (UTF-8) or protobuf SignDoc
   dataType: CosmosChain.DataType.amino,
   path: cosmos.pathFor(0),             // "m/44'/118'/0'/0/0"
   xfp: cosmos.xfp,
-  address: cosmos.deriveAddress(0, { prefix: 'cosmos' }),
+  address: cosmos.deriveAddress(0, { chain: 'cosmos' }),
 });
 // Ethermint: const evm = accounts.evm()!;
 //   era.cosmos.generateEthermintSignRequest({ ..., path: evm.pathFor(0), xfp: evm.xfp, address: evm.deriveAddress(0) })

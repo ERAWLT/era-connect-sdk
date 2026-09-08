@@ -67,15 +67,31 @@ btc.zpub();                              // SLIP-132 form for wallet tooling
 
 accounts.btc({ testnet: true });         // a DIFFERENT account — m/84'/1'/0'
 
-const sol = accounts.solana();   // Ed25519 has no public derivation — the
-sol[0].address;                  // device pre-derives m/44'/501'/0'..9';
-sol[0].path;                     // each entry IS a signer
+accounts.btc({ purpose: 86 });            // taproot — bc1p…
+
+const sol = accounts.solana({ scheme: 'account' });  // Ed25519 has no public
+sol[0].address;                  // derivation — the device pre-derives each
+sol[0].scheme;                   // key, so every entry IS a signer
 
 const tron = accounts.tron()!;
 tron.deriveAddress(0);           // 'T…'
 
 const bch = accounts.bch()!;     // m/44'/145'/0'
 bch.deriveAddress(0);            // bare CashAddr ('q…')
+
+accounts.litecoin()!.deriveAddress(0);   // 'ltc1q…' — also dogecoin(), dash()
+
+const ada = accounts.cardano()!;
+ada.deriveAddress(0);            // 'addr1…' — payment key joined to the stake key
+
+accounts.ton()!.address;         // 'UQ…' — the V4R2 wallet contract's address
+
+const atom = accounts.cosmos()!;                 // the shared m/44'/118'/0' key
+atom.deriveAddress(0, { chain: 'osmosis' });     // 'osmo1…'
+accounts.cosmos('injective')!.deriveAddress(0);  // 'inj1…' — an EVM key, bech32
+
+accounts.xrp()!.deriveAddress(0);        // 'r…'
+accounts.sui()[0].address;               // '0x…'
 ```
 
 **Persist `accounts.sourceUr`** (the raw UR string) — re-parse it any time you

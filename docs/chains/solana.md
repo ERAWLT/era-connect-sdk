@@ -12,10 +12,31 @@ Two Solana-specific facts drive everything here:
   makes versioned (v0) transactions work unchanged — and makes it YOUR job to
   pass message bytes, not a serialized signed-tx envelope.
 
+## Accounts: three derivation schemes
+
+The device ships all three Solana derivations and separates them by path depth
+alone, so `index` is unique only within a scheme — read it together with
+`scheme`:
+
+```ts
+accounts.solana();                              // every key the export carries
+accounts.solana({ scheme: 'single' });          // m/44'/501'
+accounts.solana({ scheme: 'account' });         // m/44'/501'/<n>'
+accounts.solana({ scheme: 'sub-account' });     // m/44'/501'/<n>'/0'
+
+const sol = accounts.solana({ scheme: 'account' })[0];
+sol.scheme;   // 'account'
+sol.index;    // 0
+sol.address;  // base58 — the key itself
+```
+
+Ed25519 hardened paths cannot be walked from a parent public key, so each entry
+IS a signer and there is nothing to derive beyond what the export carries.
+
 ## 1. Generate the sign request
 
 ```ts
-const sol = accounts.solana()[0];
+const sol = accounts.solana({ scheme: 'account' })[0];  // m/44'/501'/<n>'
 const request = era.solana.generateSignRequest({
   signData: messageBytes,          // compiled message (see below)
   path: sol.path,                  // "m/44'/501'/0'" — 3 levels, all hardened

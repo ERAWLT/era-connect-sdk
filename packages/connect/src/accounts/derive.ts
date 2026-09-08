@@ -1,17 +1,36 @@
-import { secp256k1 } from '@noble/curves/secp256k1';
+import { schnorr, secp256k1 } from '@noble/curves/secp256k1';
 import { blake2b } from '@noble/hashes/blake2b';
 import { ripemd160 } from '@noble/hashes/ripemd160';
 import { sha256 } from '@noble/hashes/sha2';
 import { keccak_256 } from '@noble/hashes/sha3';
-import { base58, base58xrp, bech32, createBase58check } from '@scure/base';
+import { base58, base58xrp, base64urlnopad, bech32, bech32m, createBase58check } from '@scure/base';
 import { HDKey } from '@scure/bip32';
 import { encodeCashAddr } from '../chains/cashaddr';
-import { bytesToHex, concatBytes, u32be } from '../core/bytes';
+import { bytesToHex, concatBytes, hexToBytes, u32be } from '../core/bytes';
 import { EraSdkError } from '../core/errors';
 
 const base58check = createBase58check(sha256);
 
 /** Non-hardened BIP-32 child public key from an account-level (publicKey, chainCode). */
+/**
+ * One non-hardened BIP-32 step from an account-level (publicKey, chainCode).
+ *
+ * The Ledger *legacy* EVM scheme (MEW / MyCrypto) puts its addresses one level
+ * below the account — `m/44'/60'/0'/<index>` — not two, so it cannot go
+ * through [derivePublicKey], which always takes a change level first.
+ */
+export function derivePublicKeyChild(
+  publicKey: Uint8Array,
+  chainCode: Uint8Array,
+  index: number,
+): Uint8Array {
+  const child = new HDKey({ publicKey, chainCode }).deriveChild(index);
+  if (!child.publicKey) {
+    throw new EraSdkError('invalid-props', 'child derivation produced no public key');
+  }
+  return child.publicKey;
+}
+
 export function derivePublicKey(
   publicKey: Uint8Array,
   chainCode: Uint8Array,
@@ -58,16 +77,84 @@ export function bchAddressFromPublicKey(
 /** P2WPKH (witness v0) bech32 address. */
 export function btcP2wpkhAddressFromPublicKey(
   publicKey33: Uint8Array,
-  hrp: 'bc' | 'tb' = 'bc',
+  hrp: Bech32Hrp = 'bc',
 ): string {
   return bech32.encode(hrp, [0, ...bech32.toWords(hash160(publicKey33))]);
 }
 
+/**
+ * The segwit human-readable parts the device can produce. Litecoin is here
+ * because it is the one other chain in the export with a native-segwit
+ * derivation (`m/84'/2'`); Dogecoin and Dash have no segwit at all.
+ */
+export type Bech32Hrp = 'bc' | 'tb' | 'ltc';
+
+/**
+ * P2PKH base58check under an explicit version byte. Bitcoin is 0x00 mainnet /
+ * 0x6f testnet, Litecoin 48, Dogecoin 30, Dash 76 — the numbers the firmware
+ * carries in each coin's `CoinInfo`. A version byte is the only thing that
+ * separates these chains' addresses, so it is a parameter rather than a
+ * per-chain copy of the same six lines.
+ */
+export function p2pkhAddressFromPublicKey(publicKey33: Uint8Array, version: number): string {
+  return base58check.encode(concatBytes(new Uint8Array([version]), hash160(publicKey33)));
+}
+
+/** P2SH-P2WPKH base58check under an explicit P2SH version byte. */
+export function nestedSegwitAddressFromPublicKey(publicKey33: Uint8Array, version: number): string {
+  const redeemScript = concatBytes(new Uint8Array([0x00, 0x14]), hash160(publicKey33));
+  return base58check.encode(concatBytes(new Uint8Array([version]), hash160(redeemScript)));
+}
+
+/**
+ * P2TR (witness v1) bech32m address — BIP-86 key-path spend, no script tree.
+ *
+ * The witness program is the TWEAKED output key, not the BIP-32 child key:
+ *
+ *     P = lift_x(x(child))                 // BIP-340 lift forces an even Y
+ *     t = int(taggedHash("TapTweak", x(P)))
+ *     Q = P + t*G
+ *     program = x(Q)
+ *
+ * Encoding the untweaked internal key instead produces a perfectly valid,
+ * perfectly wrong `bc1p…` — an address the device never derives and cannot
+ * key-path spend, because the firmware signs for Q. That is not hypothetical:
+ * it is why this function exists.
+ */
+export function btcTaprootAddressFromPublicKey(
+  publicKey33: Uint8Array,
+  hrp: 'bc' | 'tb' = 'bc',
+): string {
+  if (publicKey33.length !== 33) {
+    throw new EraSdkError(
+      'invalid-props',
+      `taproot needs a 33-byte compressed key, got ${publicKey33.length}`,
+    );
+  }
+  // The compressed prefix carries the child key's Y parity; BIP-341 discards
+  // it and lifts an even Y, so the internal key is the bare x coordinate.
+  const xOnly = publicKey33.subarray(1);
+  const internal = schnorr.utils.lift_x(bytesToBigIntBE(xOnly));
+  const tweak = bytesToBigIntBE(schnorr.utils.taggedHash('TapTweak', xOnly));
+  if (tweak >= schnorr.Point.CURVE().n) {
+    // Unreachable in practice (~2^-128); an explicit refusal beats a library
+    // exception three frames down.
+    throw new EraSdkError('invalid-props', 'taproot tweak is out of range for this key');
+  }
+  const output = internal.add(schnorr.Point.BASE.multiply(tweak));
+  return bech32m.encode(hrp, [1, ...bech32m.toWords(schnorr.utils.pointToBytes(output))]);
+}
+
+/** Big-endian bytes as a bigint. Local so the deprecated noble alias stays unused. */
+function bytesToBigIntBE(bytes: Uint8Array): bigint {
+  let n = 0n;
+  for (const b of bytes) n = (n << 8n) | BigInt(b);
+  return n;
+}
+
 /** Legacy P2PKH base58check address (`1...`). */
 export function btcP2pkhAddressFromPublicKey(publicKey33: Uint8Array, testnet = false): string {
-  return base58check.encode(
-    concatBytes(new Uint8Array([testnet ? 0x6f : 0x00]), hash160(publicKey33)),
-  );
+  return p2pkhAddressFromPublicKey(publicKey33, testnet ? 0x6f : 0x00);
 }
 
 /** Nested segwit (P2SH-P2WPKH) base58check address (`3...`). */
@@ -75,10 +162,7 @@ export function btcNestedSegwitAddressFromPublicKey(
   publicKey33: Uint8Array,
   testnet = false,
 ): string {
-  const redeemScript = concatBytes(new Uint8Array([0x00, 0x14]), hash160(publicKey33));
-  return base58check.encode(
-    concatBytes(new Uint8Array([testnet ? 0xc4 : 0x05]), hash160(redeemScript)),
-  );
+  return nestedSegwitAddressFromPublicKey(publicKey33, testnet ? 0xc4 : 0x05);
 }
 
 /**
@@ -86,6 +170,136 @@ export function btcNestedSegwitAddressFromPublicKey(
  * witness-version prefix (that is a segwit thing, not a Cosmos one). Every
  * zone carries its own HRP over the same key, so `prefix` is the caller's.
  */
+/**
+ * Ethermint bech32 address (Injective, Evmos, Dymension).
+ *
+ * These zones are EVM keys wearing a Cosmos coat: the payload is the ETHEREUM
+ * address — `keccak256(uncompressed[1..])[-20:]` — under the zone's own HRP,
+ * NOT the `sha256+ripemd160` hash every other Cosmos chain uses. Encoding one
+ * with the classic recipe produces a well-formed `inj1…` for a different
+ * account entirely, which is why the two live in separate functions rather
+ * than behind a flag.
+ */
+/**
+ * Cardano Shelley BASE address (`addr1…`): payment key and stake key joined.
+ *
+ *     header(1) || blake2b224(payment_vkey) || blake2b224(stake_vkey)
+ *
+ * The header is `0x01` — address type 0 (base), network id 1 (mainnet) — and
+ * the whole 57 bytes are bech32 (not bech32m) under the HRP `addr`, exactly as
+ * `CardanoAddress.cpp` builds it.
+ *
+ * A base address commits to BOTH keys, which is why this takes two: an address
+ * built from the payment key alone is an *enterprise* address, a different
+ * thing that cannot delegate its stake.
+ */
+/**
+ * TON wallet address (`UQ…`) for the V4R2 contract — the version every ERA
+ * export ships.
+ *
+ * A TON address is not a hash of the key: it is the hash of the wallet
+ * CONTRACT the key would deploy. `StateInit{code, data}` is a cell with two
+ * refs, its representation hash is the account id, and the friendly form is
+ * `tag || workchain || account_id || crc16`, base64url.
+ *
+ * The code cell never varies, so only its hash and depth are needed rather
+ * than the whole BOC — the same two constants the firmware carries.
+ *
+ * V5R1 is deliberately absent: the firmware declares it, but no wallet-link
+ * profile exports it (every one clamps TON to derivation index 0), so an
+ * implementation here could not be exercised against a real export.
+ */
+export function tonAddressFromPublicKey(
+  publicKey32: Uint8Array,
+  options?: { bounceable?: boolean; workchain?: number },
+): string {
+  if (publicKey32.length !== 32) {
+    throw new EraSdkError('invalid-props', 'TON needs a 32-byte ed25519 key');
+  }
+  // seqno(32) || wallet_id(32) || pubkey(256) || plugins(1) = 321 bits.
+  const data = new Uint8Array(41);
+  const view = new DataView(data.buffer);
+  view.setUint32(4, TON_V4R2_WALLET_ID, false);
+  data.set(publicKey32, 8);
+  const dataHash = tonCellHash(data, 321, []);
+  const accountId = tonCellHash(new Uint8Array([0x30]), 5, [
+    { hash: TON_V4R2_CODE_HASH, depth: TON_V4R2_CODE_DEPTH },
+    { hash: dataHash, depth: 0 },
+  ]);
+
+  const raw = new Uint8Array(36);
+  raw[0] = options?.bounceable ? 0x11 : 0x51;
+  raw[1] = (options?.workchain ?? 0) & 0xff;
+  raw.set(accountId, 2);
+  const crc = tonCrc16(raw.subarray(0, 34));
+  raw[34] = crc >> 8;
+  raw[35] = crc & 0xff;
+  return base64urlnopad.encode(raw);
+}
+
+const TON_V4R2_WALLET_ID = 698983191;
+const TON_V4R2_CODE_DEPTH = 7;
+const TON_V4R2_CODE_HASH = hexToBytes(
+  'feb5ff6820e2ff0d9483e7e0d62c817d846789fb4ae580c878866d959dabd5c0',
+);
+
+/**
+ * The representation hash of one cell: `d1 || d2 || data || ref depths ||
+ * ref hashes`, sha256. `d1` counts refs, `d2` encodes the data length in
+ * half-bytes, and a cell whose bit count is not a multiple of eight carries a
+ * trailing 1 bit followed by zeros — the "completion tag".
+ */
+function tonCellHash(
+  data: Uint8Array,
+  bits: number,
+  refs: readonly { hash: Uint8Array; depth: number }[],
+): Uint8Array {
+  const byteLength = Math.ceil(bits / 8);
+  const incomplete = bits % 8 !== 0;
+  const body = data.slice(0, byteLength);
+  if (incomplete) {
+    const shift = 7 - (bits % 8);
+    const last = body[byteLength - 1] ?? 0;
+    body[byteLength - 1] = (last | (1 << shift)) & ((0xff << shift) & 0xff);
+  }
+  const head = new Uint8Array([refs.length, byteLength * 2 - (incomplete ? 1 : 0)]);
+  const depths = new Uint8Array(refs.length * 2);
+  refs.forEach((r, i) => {
+    depths[i * 2] = r.depth >> 8;
+    depths[i * 2 + 1] = r.depth & 0xff;
+  });
+  return sha256(concatBytes(head, body, depths, ...refs.map((r) => r.hash)));
+}
+
+/** CRC16-CCITT (XModem), TON's address checksum. */
+function tonCrc16(data: Uint8Array): number {
+  let crc = 0;
+  for (const byte of data) {
+    crc ^= byte << 8;
+    for (let i = 0; i < 8; i++) {
+      crc = crc & 0x8000 ? ((crc << 1) ^ 0x1021) & 0xffff : (crc << 1) & 0xffff;
+    }
+  }
+  return crc;
+}
+
+export function cardanoBaseAddress(paymentKey32: Uint8Array, stakeKey32: Uint8Array): string {
+  if (paymentKey32.length !== 32 || stakeKey32.length !== 32) {
+    throw new EraSdkError('invalid-props', 'cardano base address needs two 32-byte keys');
+  }
+  const payload = concatBytes(
+    new Uint8Array([0x01]),
+    blake2b(paymentKey32, { dkLen: 28 }),
+    blake2b(stakeKey32, { dkLen: 28 }),
+  );
+  return bech32.encode('addr', bech32.toWords(payload), 200);
+}
+
+export function ethermintAddressFromPublicKey(publicKey33: Uint8Array, prefix: string): string {
+  const payload = keccak_256(uncompressed(publicKey33).slice(1)).slice(12);
+  return bech32.encode(prefix, bech32.toWords(payload));
+}
+
 export function cosmosAddressFromPublicKey(publicKey33: Uint8Array, prefix: string): string {
   return bech32.encode(prefix, bech32.toWords(hash160(publicKey33)));
 }

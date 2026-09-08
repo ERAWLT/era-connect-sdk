@@ -9,10 +9,10 @@ Three TON-specific facts drive the integration:
   pass in `signData`; for a TON Connect proof it is
   `sha256(0xFFFF || "ton-connect" || sha256(payload))`. The SDK recomputes
   both in `verifyTonSignature`.
-- **One key, two wallet contracts.** V4R2 and V5R1 share the account path
-  (`m/44'/607'/0'`); the contract version only changes the ADDRESS. Derive
-  the address from `accounts.ton().publicKey` with your TON tooling
-  (`@ton/core` etc.) for the contract version your wallet uses.
+- **The address is the contract, not the key.** A TON address is the hash of
+  the wallet contract the key would deploy, so it is computed from the
+  `StateInit` cell rather than from the public key directly. `ton.address` is
+  the V4R2 wallet address.
 - **The request id travels as text.** On this chain the ecosystem convention
   is the ASCII bytes of the hyphenated UUID string (tag 37) — the SDK emits
   that form and accepts either form in the echo. You never handle it
@@ -33,7 +33,9 @@ const scanner = era.scanner({ expectedTypes: WALLET_UR_TYPES });
 // ...feed camera frames...
 const accounts = era.parseAccounts(scanner.result());
 const ton = accounts.ton()!;
-ton.publicKey; // 32-byte Ed25519 — the signer AND the address source
+ton.publicKey;          // 32-byte Ed25519 — the signer
+ton.address;            // 'UQ…' non-bounceable — the form to show for receiving
+ton.bounceableAddress;  // 'EQ…' — the same account under the bounceable tag
 ton.xfp;
 ```
 

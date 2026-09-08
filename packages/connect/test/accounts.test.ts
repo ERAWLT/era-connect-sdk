@@ -392,8 +392,6 @@ function expectRefusal(fn: () => unknown, code: EraErrorCode, message: string): 
   expect(error.message).toBe(message);
 }
 
-const TAPROOT_REFUSAL =
-  'taproot addresses need the BIP-341 output-key tweak; derive them from xpub() with your Bitcoin library';
 const ZPUB_REFUSAL = 'zpub is the SLIP-132 form of the BIP-84 account only';
 
 describe('Bitcoin network selection', () => {
@@ -637,15 +635,19 @@ describe('Bitcoin network selection', () => {
     expect(byPath.get("m/84'/1'/0'")).toBe('unknown');
   });
 
-  it('refuses taproot addresses on both networks, by code AND message', () => {
-    for (const testnet of [false, true]) {
+  it('derives taproot addresses on both networks, tweaked and bech32m', () => {
+    // Purpose 86 used to throw here. It now answers, and what it answers is
+    // pinned against the published BIP-86 vectors in taproot.test.ts; this
+    // assertion only holds the wiring — that `btc({purpose: 86})` reaches the
+    // taproot encoder and picks the hrp off the network.
+    for (const [testnet, hrp] of [
+      [false, 'bc1p'],
+      [true, 'tb1p'],
+    ] as const) {
       const view = both.btc({ testnet, purpose: 86 })!;
-      expectRefusal(() => view.deriveAddress(0), 'invalid-props', TAPROOT_REFUSAL);
-      expectRefusal(
-        () => view.deriveAddress(0, { change: true }),
-        'invalid-props',
-        TAPROOT_REFUSAL,
-      );
+      expect(view.deriveAddress(0).startsWith(hrp)).toBe(true);
+      expect(view.deriveAddress(0, { change: true }).startsWith(hrp)).toBe(true);
+      expect(view.deriveAddress(0)).not.toBe(view.deriveAddress(0, { change: true }));
     }
   });
 

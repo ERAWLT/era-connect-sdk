@@ -155,31 +155,52 @@ export class EraConnect {
 // Public types & modules
 // ---------------------------------------------------------------------------
 
-export type { AccountChain, AccountKey, BtcPurpose, DeviceInfo } from './accounts/accounts';
+export type {
+  AccountChain,
+  AccountKey,
+  BtcPurpose,
+  CosmosChainInfo,
+  DeviceInfo,
+  EvmLedgerScheme,
+  SolanaScheme,
+  UtxoChain,
+} from './accounts/accounts';
 export {
   BchAccountView,
   BtcAccountView,
   CardanoAccountView,
+  COSMOS_CHAINS,
   CosmosAccountView,
+  cosmosChain,
   EraAccounts,
   EvmAccountView,
+  EvmLedgerAccountView,
   SolanaAccountView,
   SuiAccountView,
   TonAccountView,
   TronAccountView,
+  UtxoAccountView,
   XrpAccountView,
 } from './accounts/accounts';
 // Address derivation from a public key you already hold — the same primitives
 // the account views use, for callers that keep their own key material.
+export type { Bech32Hrp } from './accounts/derive';
 export {
   bchAddressFromPublicKey,
   btcNestedSegwitAddressFromPublicKey,
   btcP2pkhAddressFromPublicKey,
   btcP2wpkhAddressFromPublicKey,
+  btcTaprootAddressFromPublicKey,
+  cardanoBaseAddress,
   cosmosAddressFromPublicKey,
+  derivePublicKeyChild,
+  ethermintAddressFromPublicKey,
   evmAddressFromPublicKey,
+  nestedSegwitAddressFromPublicKey,
+  p2pkhAddressFromPublicKey,
   solanaAddressFromPublicKey,
   suiAddressFromPublicKey,
+  tonAddressFromPublicKey,
   tronAddressFromPublicKey,
   xrpAddressFromPublicKey,
 } from './accounts/derive';
