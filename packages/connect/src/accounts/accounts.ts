@@ -15,6 +15,7 @@ import {
   cardanoSoftDerivePath,
   cosmosAddressFromPublicKey,
   derivePublicKey,
+  derivePublicKeyChild,
   ethermintAddressFromPublicKey,
   nestedSegwitAddressFromPublicKey,
   p2pkhAddressFromPublicKey,
@@ -194,6 +195,53 @@ export class EvmAccountView {
 
   xpub(): string {
     return extendedKeyOf(this.entry);
+  }
+}
+
+/**
+ * An EVM account under one of Ledger's two alternative schemes.
+ *
+ * The device exports three EVM derivations, and `evm()` answers only the
+ * standard one. These two were invisible: `ledger-live` ships ten fully
+ * derived leaves at `m/44'/60'/<n>'/0/0` — one key per account, nothing to
+ * derive further — while `ledger-legacy` is an account whose addresses sit ONE
+ * level below it, at `m/44'/60'/0'/<index>`, not two.
+ */
+export type EvmLedgerScheme = 'ledger-live' | 'ledger-legacy';
+
+export class EvmLedgerAccountView {
+  constructor(
+    private readonly entry: RawAccountEntry,
+    private readonly resolvedXfp: number,
+    readonly scheme: EvmLedgerScheme,
+  ) {}
+
+  get xfp(): string {
+    return xfpToHex(this.resolvedXfp);
+  }
+
+  /** The exported path: an account for `ledger-legacy`, a leaf for `ledger-live`. */
+  get path(): string {
+    return formatPath([...this.entry.path]);
+  }
+
+  /**
+   * `ledger-live`: the address of the exported key itself, which is all the
+   * export carries. `ledger-legacy`: the address at `<account>/<index>`.
+   */
+  deriveAddress(index = 0): `0x${string}` {
+    if (this.scheme === 'ledger-live') {
+      if (index !== 0) {
+        throw new EraSdkError(
+          'invalid-props',
+          'a Ledger Live entry is one already-derived key; ask for another entry, not another index',
+        );
+      }
+      return evmAddressFromPublicKey(requireKey(this.entry, 33));
+    }
+    return evmAddressFromPublicKey(
+      derivePublicKeyChild(requireKey(this.entry, 33), withChainCode(this.entry), index),
+    );
   }
 }
 
@@ -977,6 +1025,34 @@ export class EraAccounts {
   bch(): BchAccountView | undefined {
     const entry = this.raw.entries.find((e) => classify(e.path) === 'bch');
     return entry ? new BchAccountView(entry, this.resolveXfp(entry)) : undefined;
+  }
+
+  /**
+   * The Ledger Live EVM accounts — ten fully derived leaves at
+   * `m/44'/60'/<n>'/0/0`, in export order. They carry a chain code, which is
+   * what tells them apart from the Ethermint keys that share the same path
+   * shape and carry none.
+   */
+  evmLedgerLive(): EvmLedgerAccountView[] {
+    return this.raw.entries
+      .filter(
+        (e) => classify(e.path) === 'evm' && e.path.length === 5 && e.chainCode !== null,
+      )
+      .map((e) => new EvmLedgerAccountView(e, this.resolveXfp(e), 'ledger-live'));
+  }
+
+  /**
+   * The Ledger legacy (MEW / MyCrypto) EVM account, whose addresses sit ONE
+   * level below it. It shares the standard account's path shape, so it is the
+   * depth-3 EVM entry that is NOT the standard one.
+   */
+  evmLedgerLegacy(): EvmLedgerAccountView | undefined {
+    const entry = this.raw.entries.find(
+      (e) => isEvmAccount(e) && e.note !== null && e.note !== 'account.standard',
+    );
+    return entry
+      ? new EvmLedgerAccountView(entry, this.resolveXfp(entry), 'ledger-legacy')
+      : undefined;
   }
 
   /**

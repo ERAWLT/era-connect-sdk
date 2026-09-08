@@ -161,6 +161,7 @@ export type {
   BtcPurpose,
   CosmosChainInfo,
   DeviceInfo,
+  EvmLedgerScheme,
   SolanaScheme,
   UtxoChain,
 } from './accounts/accounts';
@@ -173,6 +174,7 @@ export {
   cosmosChain,
   EraAccounts,
   EvmAccountView,
+  EvmLedgerAccountView,
   SolanaAccountView,
   SuiAccountView,
   TonAccountView,
@@ -191,6 +193,7 @@ export {
   btcTaprootAddressFromPublicKey,
   cardanoBaseAddress,
   cosmosAddressFromPublicKey,
+  derivePublicKeyChild,
   ethermintAddressFromPublicKey,
   evmAddressFromPublicKey,
   nestedSegwitAddressFromPublicKey,

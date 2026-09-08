@@ -12,6 +12,25 @@ import { EraSdkError } from '../core/errors';
 const base58check = createBase58check(sha256);
 
 /** Non-hardened BIP-32 child public key from an account-level (publicKey, chainCode). */
+/**
+ * One non-hardened BIP-32 step from an account-level (publicKey, chainCode).
+ *
+ * The Ledger *legacy* EVM scheme (MEW / MyCrypto) puts its addresses one level
+ * below the account — `m/44'/60'/0'/<index>` — not two, so it cannot go
+ * through [derivePublicKey], which always takes a change level first.
+ */
+export function derivePublicKeyChild(
+  publicKey: Uint8Array,
+  chainCode: Uint8Array,
+  index: number,
+): Uint8Array {
+  const child = new HDKey({ publicKey, chainCode }).deriveChild(index);
+  if (!child.publicKey) {
+    throw new EraSdkError('invalid-props', 'child derivation produced no public key');
+  }
+  return child.publicKey;
+}
+
 export function derivePublicKey(
   publicKey: Uint8Array,
   chainCode: Uint8Array,
