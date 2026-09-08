@@ -16,7 +16,16 @@ function levels(list: [number, boolean][]) {
 function solEntry(list: [number, boolean][], keyByte: number) {
   return cbMap([
     [3, cbBytes(new Uint8Array(32).fill(keyByte))],
-    [6, cbTag(304, cbMap([[1, levels(list)], [2, cbUint(0x11111111)]]))],
+    [
+      6,
+      cbTag(
+        304,
+        cbMap([
+          [1, levels(list)],
+          [2, cbUint(0x11111111)],
+        ]),
+      ),
+    ],
   ]);
 }
 
@@ -29,10 +38,38 @@ const wallet = EraAccounts.fromUr(
         [
           2,
           cbArray([
-            solEntry([[44, true], [501, true]], 0x01),
-            solEntry([[44, true], [501, true], [0, true]], 0x02),
-            solEntry([[44, true], [501, true], [0, true], [0, true]], 0x03),
-            solEntry([[44, true], [501, true], [1, true]], 0x04),
+            solEntry(
+              [
+                [44, true],
+                [501, true],
+              ],
+              0x01,
+            ),
+            solEntry(
+              [
+                [44, true],
+                [501, true],
+                [0, true],
+              ],
+              0x02,
+            ),
+            solEntry(
+              [
+                [44, true],
+                [501, true],
+                [0, true],
+                [0, true],
+              ],
+              0x03,
+            ),
+            solEntry(
+              [
+                [44, true],
+                [501, true],
+                [1, true],
+              ],
+              0x04,
+            ),
           ]),
         ],
       ]),

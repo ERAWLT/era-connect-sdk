@@ -41,7 +41,14 @@ const wallet = EraAccounts.fromUr(
                 cbTag(
                   304,
                   cbMap([
-                    [1, levels([[1852, true], [1815, true], [0, true]])],
+                    [
+                      1,
+                      levels([
+                        [1852, true],
+                        [1815, true],
+                        [0, true],
+                      ]),
+                    ],
                     [2, cbUint(0x33333333)],
                   ]),
                 ),
@@ -68,9 +75,7 @@ function expectedAddress(payment: Uint8Array, stake: Uint8Array): string {
 
 describe('Cardano Shelley base addresses', () => {
   it('joins the payment key to the stake key at 2/0', () => {
-    expect(ada.deriveAddress(0)).toBe(
-      expectedAddress(ada.deriveKey(0, 0), ada.deriveKey(2, 0)),
-    );
+    expect(ada.deriveAddress(0)).toBe(expectedAddress(ada.deriveKey(0, 0), ada.deriveKey(2, 0)));
   });
 
   it('is 57 bytes under the addr hrp', () => {
@@ -90,22 +95,16 @@ describe('Cardano Shelley base addresses', () => {
 
   it('walks the receive chain', () => {
     expect(ada.deriveAddress(1)).not.toBe(ada.deriveAddress(0));
-    expect(ada.deriveAddress(1)).toBe(
-      expectedAddress(ada.deriveKey(0, 1), ada.deriveKey(2, 0)),
-    );
+    expect(ada.deriveAddress(1)).toBe(expectedAddress(ada.deriveKey(0, 1), ada.deriveKey(2, 0)));
   });
 
   it('refuses keys that are not 32 bytes', () => {
-    expect(() => cardanoBaseAddress(key.subarray(1), key)).toThrowError(
-      /two 32-byte keys/,
-    );
+    expect(() => cardanoBaseAddress(key.subarray(1), key)).toThrowError(/two 32-byte keys/);
   });
 
   it('an enterprise-style single-key address is NOT what this builds', () => {
     // Both halves matter: swapping them must change the address, or the stake
     // key is not really committed to.
-    expect(cardanoBaseAddress(key, chainCode)).not.toBe(
-      cardanoBaseAddress(chainCode, key),
-    );
+    expect(cardanoBaseAddress(key, chainCode)).not.toBe(cardanoBaseAddress(chainCode, key));
   });
 });

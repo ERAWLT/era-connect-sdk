@@ -1,5 +1,6 @@
 import { HDKey } from '@scure/bip32';
 import { describe, expect, it } from 'vitest';
+import { evmAddressFromPublicKey } from '../src/accounts/derive';
 import { cborDecode } from '../src/cbor/decode';
 import { cborEncode } from '../src/cbor/encode';
 import {
@@ -13,7 +14,6 @@ import {
   cbUint,
   mapGet,
 } from '../src/cbor/model';
-import { evmAddressFromPublicKey } from '../src/accounts/derive';
 import { concatBytes, hexToBytes, utf8Decode } from '../src/core/bytes';
 import { EraAccounts, EraConnect, EraSdkError, Ur, WALLET_UR_TYPES } from '../src/index';
 import { gunzipCapped, gzipCompress } from '../src/tron-proto/gzip';

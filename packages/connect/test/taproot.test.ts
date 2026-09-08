@@ -15,9 +15,21 @@ const ACCOUNT_XPUB =
   'xpub6BgBgsespWvERF3LHQu6CnqdvfEvtMcQjYrcRzx53QJjSxarj2afYWcLteoGVky7D3UKDP9QyrLprQ3VCECoY49yfdDEHGCtMMj92pReUsQ';
 
 const VECTORS = [
-  { change: 0, index: 0, address: 'bc1p5cyxnuxmeuwuvkwfem96lqzszd02n6xdcjrs20cac6yqjjwudpxqkedrcr' },
-  { change: 0, index: 1, address: 'bc1p4qhjn9zdvkux4e44uhx8tc55attvtyu358kutcqkudyccelu0was9fqzwh' },
-  { change: 1, index: 0, address: 'bc1p3qkhfews2uk44qtvauqyr2ttdsw7svhkl9nkm9s9c3x4ax5h60wqwruhk7' },
+  {
+    change: 0,
+    index: 0,
+    address: 'bc1p5cyxnuxmeuwuvkwfem96lqzszd02n6xdcjrs20cac6yqjjwudpxqkedrcr',
+  },
+  {
+    change: 0,
+    index: 1,
+    address: 'bc1p4qhjn9zdvkux4e44uhx8tc55attvtyu358kutcqkudyccelu0was9fqzwh',
+  },
+  {
+    change: 1,
+    index: 0,
+    address: 'bc1p3qkhfews2uk44qtvauqyr2ttdsw7svhkl9nkm9s9c3x4ax5h60wqwruhk7',
+  },
 ] as const;
 
 const account = HDKey.fromExtendedKey(ACCOUNT_XPUB);
@@ -39,9 +51,7 @@ describe('btcTaprootAddressFromPublicKey', () => {
     // instead of letting a wrong address ship.
     const child = childAt(0, 0);
     const internalKeyHex = Buffer.from(child.subarray(1)).toString('hex');
-    expect(internalKeyHex).toBe(
-      'cc8a4bc64d897bddc5fbc2f670f7a8ba0b386779106cf1223c6fc5d7cd6fc115',
-    );
+    expect(internalKeyHex).toBe('cc8a4bc64d897bddc5fbc2f670f7a8ba0b386779106cf1223c6fc5d7cd6fc115');
     expect(btcTaprootAddressFromPublicKey(child)).not.toBe(
       // what bech32m of the internal key would give
       'bc1pej9yh3jd39aam30mctm8paaghg9nsemezpk0zg3udlza0nt0cy2sqvps98',

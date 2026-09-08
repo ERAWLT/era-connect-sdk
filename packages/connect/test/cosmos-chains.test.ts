@@ -1,5 +1,5 @@
-import { HDKey } from '@scure/bip32';
 import { bech32 } from '@scure/base';
+import { HDKey } from '@scure/bip32';
 import { describe, expect, it } from 'vitest';
 import { ethermintAddressFromPublicKey, evmAddressFromPublicKey } from '../src/accounts/derive';
 import { cborEncode } from '../src/cbor/encode';
@@ -30,7 +30,16 @@ function entryAt(path: string, list: [number, boolean][], xfp: number) {
   return cbMap([
     [3, cbBytes(node.publicKey!)],
     [4, cbBytes(node.chainCode!)],
-    [6, cbTag(304, cbMap([[1, levels(list)], [2, cbUint(xfp)]]))],
+    [
+      6,
+      cbTag(
+        304,
+        cbMap([
+          [1, levels(list)],
+          [2, cbUint(xfp)],
+        ]),
+      ),
+    ],
   ]);
 }
 
@@ -43,9 +52,33 @@ const wallet = EraAccounts.fromUr(
         [
           2,
           cbArray([
-            entryAt("m/44'/118'/0'", [[44, true], [118, true], [0, true]], 0x11111111),
-            entryAt("m/44'/459'/0'", [[44, true], [459, true], [0, true]], 0x22222222),
-            entryAt("m/44'/60'/0'", [[44, true], [60, true], [0, true]], 0x33333333),
+            entryAt(
+              "m/44'/118'/0'",
+              [
+                [44, true],
+                [118, true],
+                [0, true],
+              ],
+              0x11111111,
+            ),
+            entryAt(
+              "m/44'/459'/0'",
+              [
+                [44, true],
+                [459, true],
+                [0, true],
+              ],
+              0x22222222,
+            ),
+            entryAt(
+              "m/44'/60'/0'",
+              [
+                [44, true],
+                [60, true],
+                [0, true],
+              ],
+              0x33333333,
+            ),
           ]),
         ],
       ]),
@@ -65,9 +98,7 @@ describe('the Cosmos chain registry', () => {
     // THORChain 931, Terra Classic 330 — which shares Terra's).
     expect(COSMOS_CHAINS.filter((c) => c.slip44 === 118)).toHaveLength(24);
     expect(COSMOS_CHAINS.filter((c) => c.ethermint)).toHaveLength(3);
-    expect(
-      COSMOS_CHAINS.filter((c) => c.slip44 !== 118 && !c.ethermint),
-    ).toHaveLength(6);
+    expect(COSMOS_CHAINS.filter((c) => c.slip44 !== 118 && !c.ethermint)).toHaveLength(6);
   });
 
   it('marks exactly Injective, Evmos and Dymension as ethermint', () => {
@@ -159,7 +190,9 @@ describe('Ethermint zones are EVM keys wearing a Cosmos coat', () => {
 
   it('the standalone encoder agrees with the view', () => {
     const key = master.derive("m/44'/60'/0'/0/0").publicKey!;
-    expect(ethermintAddressFromPublicKey(key, 'inj')).toBe(wallet.cosmos('injective')!.deriveAddress(0));
+    expect(ethermintAddressFromPublicKey(key, 'inj')).toBe(
+      wallet.cosmos('injective')!.deriveAddress(0),
+    );
     expect(evmAddressFromPublicKey(key)).toBe(wallet.evm()!.deriveAddress(0));
   });
 });

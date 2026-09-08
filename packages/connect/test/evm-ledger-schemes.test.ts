@@ -30,14 +30,39 @@ function entry(
   const node = master.derive(path);
   const items: [number, ReturnType<typeof cbUint>][] = [[3, cbBytes(node.publicKey!)]];
   if (options?.chainCode !== false) items.push([4, cbBytes(node.chainCode!)]);
-  items.push([6, cbTag(304, cbMap([[1, levels(list)], [2, cbUint(0x11111111)]]))]);
+  items.push([
+    6,
+    cbTag(
+      304,
+      cbMap([
+        [1, levels(list)],
+        [2, cbUint(0x11111111)],
+      ]),
+    ),
+  ]);
   if (options?.note) items.push([10, cbText(options.note)]);
   return cbMap(items);
 }
 
-const acct: [number, boolean][] = [[44, true], [60, true], [0, true]];
-const live0: [number, boolean][] = [[44, true], [60, true], [0, true], [0, false], [0, false]];
-const live1: [number, boolean][] = [[44, true], [60, true], [1, true], [0, false], [0, false]];
+const acct: [number, boolean][] = [
+  [44, true],
+  [60, true],
+  [0, true],
+];
+const live0: [number, boolean][] = [
+  [44, true],
+  [60, true],
+  [0, true],
+  [0, false],
+  [0, false],
+];
+const live1: [number, boolean][] = [
+  [44, true],
+  [60, true],
+  [1, true],
+  [0, false],
+  [0, false],
+];
 
 const wallet = EraAccounts.fromUr(
   new Ur(
@@ -75,9 +100,7 @@ describe('the two Ledger EVM schemes', () => {
     expect(legacy.path).toBe("m/44'/60'/0'");
     const account = master.derive("m/44'/60'/0'");
     expect(legacy.deriveAddress(3)).toBe(
-      evmAddressFromPublicKey(
-        derivePublicKeyChild(account.publicKey!, account.chainCode!, 3),
-      ),
+      evmAddressFromPublicKey(derivePublicKeyChild(account.publicKey!, account.chainCode!, 3)),
     );
     // ...which is a different address from the standard scheme's index 3.
     expect(legacy.deriveAddress(3)).not.toBe(wallet.evm()!.deriveAddress(3));

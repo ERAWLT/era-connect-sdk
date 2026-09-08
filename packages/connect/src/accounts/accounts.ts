@@ -17,14 +17,14 @@ import {
   derivePublicKey,
   derivePublicKeyChild,
   ethermintAddressFromPublicKey,
+  evmAddressFromPublicKey,
   nestedSegwitAddressFromPublicKey,
   p2pkhAddressFromPublicKey,
-  evmAddressFromPublicKey,
   serializeExtendedPublicKey,
   solanaAddressFromPublicKey,
   suiAddressFromPublicKey,
-  tonAddressFromPublicKey,
   TPUB_VERSION,
+  tonAddressFromPublicKey,
   tronAddressFromPublicKey,
   VPUB_VERSION,
   XPUB_VERSION,
@@ -613,10 +613,7 @@ export class CardanoAccountView {
    * at `2/0`, so it commits to both. The device builds the same 57 bytes.
    */
   deriveAddress(index: number, options?: { change?: boolean }): string {
-    return cardanoBaseAddress(
-      this.deriveKey(options?.change ? 1 : 0, index),
-      this.deriveKey(2, 0),
-    );
+    return cardanoBaseAddress(this.deriveKey(options?.change ? 1 : 0, index), this.deriveKey(2, 0));
   }
 
   /** Soft-derived 32-byte verification key at `role/index` (0 payment, 1 change, 2 stake). */
@@ -789,9 +786,7 @@ export const COSMOS_CHAINS: readonly CosmosChainInfo[] = [
 const COSMOS_BY_ID = new Map(COSMOS_CHAINS.map((c) => [c.id, c]));
 
 /** Coin types that mean "a Cosmos account", Ethermint's 60 excluded. */
-const COSMOS_SLIP44 = new Set(
-  COSMOS_CHAINS.filter((c) => !c.ethermint).map((c) => c.slip44),
-);
+const COSMOS_SLIP44 = new Set(COSMOS_CHAINS.filter((c) => !c.ethermint).map((c) => c.slip44));
 
 /** Look up a zone by id, or throw with the id that was not found. */
 export function cosmosChain(id: string): CosmosChainInfo {
@@ -1035,9 +1030,7 @@ export class EraAccounts {
    */
   evmLedgerLive(): EvmLedgerAccountView[] {
     return this.raw.entries
-      .filter(
-        (e) => classify(e.path) === 'evm' && e.path.length === 5 && e.chainCode !== null,
-      )
+      .filter((e) => classify(e.path) === 'evm' && e.path.length === 5 && e.chainCode !== null)
       .map((e) => new EvmLedgerAccountView(e, this.resolveXfp(e), 'ledger-live'));
   }
 

@@ -29,19 +29,19 @@ const master = HDKey.fromMasterSeed(TEST_SEED);
 const keyAt = (path: string) => master.derive(path).publicKey!;
 
 describe('altcoin address encoders', () => {
-  it('litecoin native segwit (m/84\'/2\') is ltc1q…', () => {
+  it("litecoin native segwit (m/84'/2') is ltc1q…", () => {
     expect(btcP2wpkhAddressFromPublicKey(keyAt("m/84'/2'/0'/0/0"), 'ltc')).toBe(
       'ltc1qjmxnz78nmc8nq77wuxh25n2es7rzm5c2rkk4wh',
     );
   });
 
-  it('litecoin nested segwit (m/49\'/2\') is M…, not Bitcoin\'s 3…', () => {
+  it("litecoin nested segwit (m/49'/2') is M…, not Bitcoin's 3…", () => {
     expect(nestedSegwitAddressFromPublicKey(keyAt("m/49'/2'/0'/0/0"), 50)).toBe(
       'M7wtsL7wSHDBJVMWWhtQfTMSYYkyooAAXM',
     );
   });
 
-  it('litecoin legacy (m/44\'/2\') is L…', () => {
+  it("litecoin legacy (m/44'/2') is L…", () => {
     expect(p2pkhAddressFromPublicKey(keyAt("m/44'/2'/0'/0/0"), 48)).toBe(
       'LUWPbpM43E2p7ZSh8cyTBEkvpHmr3cB8Ez',
     );
@@ -77,7 +77,16 @@ function entryAt(path: string, list: [number, boolean][], xfp: number) {
   return cbMap([
     [3, cbBytes(node.publicKey!)],
     [4, cbBytes(node.chainCode!)],
-    [6, cbTag(304, cbMap([[1, levels(list)], [2, cbUint(xfp)]]))],
+    [
+      6,
+      cbTag(
+        304,
+        cbMap([
+          [1, levels(list)],
+          [2, cbUint(xfp)],
+        ]),
+      ),
+    ],
   ]);
 }
 
@@ -90,9 +99,33 @@ const wallet = EraAccounts.fromUr(
         [
           2,
           cbArray([
-            entryAt("m/84'/2'/0'", [[84, true], [2, true], [0, true]], 0x11111111),
-            entryAt("m/44'/3'/0'", [[44, true], [3, true], [0, true]], 0x22222222),
-            entryAt("m/44'/5'/0'", [[44, true], [5, true], [0, true]], 0x33333333),
+            entryAt(
+              "m/84'/2'/0'",
+              [
+                [84, true],
+                [2, true],
+                [0, true],
+              ],
+              0x11111111,
+            ),
+            entryAt(
+              "m/44'/3'/0'",
+              [
+                [44, true],
+                [3, true],
+                [0, true],
+              ],
+              0x22222222,
+            ),
+            entryAt(
+              "m/44'/5'/0'",
+              [
+                [44, true],
+                [5, true],
+                [0, true],
+              ],
+              0x33333333,
+            ),
           ]),
         ],
       ]),

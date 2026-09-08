@@ -101,10 +101,7 @@ export function p2pkhAddressFromPublicKey(publicKey33: Uint8Array, version: numb
 }
 
 /** P2SH-P2WPKH base58check under an explicit P2SH version byte. */
-export function nestedSegwitAddressFromPublicKey(
-  publicKey33: Uint8Array,
-  version: number,
-): string {
+export function nestedSegwitAddressFromPublicKey(publicKey33: Uint8Array, version: number): string {
   const redeemScript = concatBytes(new Uint8Array([0x00, 0x14]), hash160(publicKey33));
   return base58check.encode(concatBytes(new Uint8Array([version]), hash160(redeemScript)));
 }
@@ -129,7 +126,10 @@ export function btcTaprootAddressFromPublicKey(
   hrp: 'bc' | 'tb' = 'bc',
 ): string {
   if (publicKey33.length !== 33) {
-    throw new EraSdkError('invalid-props', `taproot needs a 33-byte compressed key, got ${publicKey33.length}`);
+    throw new EraSdkError(
+      'invalid-props',
+      `taproot needs a 33-byte compressed key, got ${publicKey33.length}`,
+    );
   }
   // The compressed prefix carries the child key's Y parity; BIP-341 discards
   // it and lifts an even Y, so the internal key is the bare x coordinate.
