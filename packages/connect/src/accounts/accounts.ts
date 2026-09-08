@@ -9,6 +9,7 @@ import {
   btcNestedSegwitAddressFromPublicKey,
   btcP2pkhAddressFromPublicKey,
   btcP2wpkhAddressFromPublicKey,
+  btcTaprootAddressFromPublicKey,
   cardanoSoftDerivePath,
   cosmosAddressFromPublicKey,
   derivePublicKey,
@@ -230,10 +231,7 @@ export class BtcAccountView {
       case 49:
         return btcNestedSegwitAddressFromPublicKey(child, this.testnet);
       case 86:
-        throw new EraSdkError(
-          'invalid-props',
-          'taproot addresses need the BIP-341 output-key tweak; derive them from xpub() with your Bitcoin library',
-        );
+        return btcTaprootAddressFromPublicKey(child, this.testnet ? 'tb' : 'bc');
       // Unreachable through `btc()`, which bounds the purpose — but the
       // constructor is public and `BtcPurpose` is erased at runtime, so a
       // JavaScript caller (or a cast) lands here. Without this arm the switch

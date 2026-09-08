@@ -1,9 +1,9 @@
-import { secp256k1 } from '@noble/curves/secp256k1';
+import { schnorr, secp256k1 } from '@noble/curves/secp256k1';
 import { blake2b } from '@noble/hashes/blake2b';
 import { ripemd160 } from '@noble/hashes/ripemd160';
 import { sha256 } from '@noble/hashes/sha2';
 import { keccak_256 } from '@noble/hashes/sha3';
-import { base58, base58xrp, bech32, createBase58check } from '@scure/base';
+import { base58, base58xrp, bech32, bech32m, createBase58check } from '@scure/base';
 import { HDKey } from '@scure/bip32';
 import { encodeCashAddr } from '../chains/cashaddr';
 import { bytesToHex, concatBytes, u32be } from '../core/bytes';
@@ -61,6 +61,49 @@ export function btcP2wpkhAddressFromPublicKey(
   hrp: 'bc' | 'tb' = 'bc',
 ): string {
   return bech32.encode(hrp, [0, ...bech32.toWords(hash160(publicKey33))]);
+}
+
+/**
+ * P2TR (witness v1) bech32m address — BIP-86 key-path spend, no script tree.
+ *
+ * The witness program is the TWEAKED output key, not the BIP-32 child key:
+ *
+ *     P = lift_x(x(child))                 // BIP-340 lift forces an even Y
+ *     t = int(taggedHash("TapTweak", x(P)))
+ *     Q = P + t*G
+ *     program = x(Q)
+ *
+ * Encoding the untweaked internal key instead produces a perfectly valid,
+ * perfectly wrong `bc1p…` — an address the device never derives and cannot
+ * key-path spend, because the firmware signs for Q. That is not hypothetical:
+ * it is why this function exists.
+ */
+export function btcTaprootAddressFromPublicKey(
+  publicKey33: Uint8Array,
+  hrp: 'bc' | 'tb' = 'bc',
+): string {
+  if (publicKey33.length !== 33) {
+    throw new EraSdkError('invalid-props', `taproot needs a 33-byte compressed key, got ${publicKey33.length}`);
+  }
+  // The compressed prefix carries the child key's Y parity; BIP-341 discards
+  // it and lifts an even Y, so the internal key is the bare x coordinate.
+  const xOnly = publicKey33.subarray(1);
+  const internal = schnorr.utils.lift_x(bytesToBigIntBE(xOnly));
+  const tweak = bytesToBigIntBE(schnorr.utils.taggedHash('TapTweak', xOnly));
+  if (tweak >= schnorr.Point.CURVE().n) {
+    // Unreachable in practice (~2^-128); an explicit refusal beats a library
+    // exception three frames down.
+    throw new EraSdkError('invalid-props', 'taproot tweak is out of range for this key');
+  }
+  const output = internal.add(schnorr.Point.BASE.multiply(tweak));
+  return bech32m.encode(hrp, [1, ...bech32m.toWords(schnorr.utils.pointToBytes(output))]);
+}
+
+/** Big-endian bytes as a bigint. Local so the deprecated noble alias stays unused. */
+function bytesToBigIntBE(bytes: Uint8Array): bigint {
+  let n = 0n;
+  for (const b of bytes) n = (n << 8n) | BigInt(b);
+  return n;
 }
 
 /** Legacy P2PKH base58check address (`1...`). */

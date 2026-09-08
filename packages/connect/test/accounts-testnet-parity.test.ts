@@ -58,7 +58,7 @@ interface FixtureAccount {
  * fixture on purpose means regenerating it in BOTH repos and updating the
  * constant in BOTH suites.
  */
-const SHARED_FIXTURE_SHA256 = 'c754db2221e3758258b0b9b9e9b84a4fc6b3478d2e81fa44760aa251fef7822d';
+const SHARED_FIXTURE_SHA256 = '75e6fb9ba19211d95dd2d72cceef6ce904e21491d7a7fdb07e3c6ffbefb0d835';
 
 const fixtureBytes = readFileSync(join(__dirname, 'fixtures', 'accounts-testnet.json'));
 
@@ -90,8 +90,6 @@ function expectRefusal(fn: () => unknown, code: EraErrorCode, message: string): 
   expect(error.message).toBe(message);
 }
 
-const TAPROOT_REFUSAL =
-  'taproot addresses need the BIP-341 output-key tweak; derive them from xpub() with your Bitcoin library';
 const ZPUB_REFUSAL = 'zpub is the SLIP-132 form of the BIP-84 account only';
 
 /**
@@ -203,13 +201,9 @@ describe('accounts testnet parity: selection', () => {
       }
 
       if (want.deriveAddress === 'throws:invalid-props') {
-        expect(want.receive).toHaveLength(0);
-        expect(want.change0).toBeNull();
-        expectRefusal(() => view.deriveAddress(0), 'invalid-props', TAPROOT_REFUSAL);
-        expectRefusal(
-          () => view.deriveAddress(0, { change: true }),
-          'invalid-props',
-          TAPROOT_REFUSAL,
+        throw new Error(
+          'no account in the shared fixture refuses deriveAddress any more — ' +
+            'delete this branch rather than leaving it unreachable',
         );
       } else {
         expect(want.deriveAddress).toBe('supported');
