@@ -1,5 +1,150 @@
 # @hwlt/era-connect
 
+## 0.8.0
+
+### Minor Changes
+
+- [#22](https://github.com/ERAWLT/era-connect-sdk/pull/22) [`4e8d296`](https://github.com/ERAWLT/era-connect-sdk/commit/4e8d2964f397a835cd8e66fbc75f8cace9afbd66) Thanks [@gsyabruk](https://github.com/gsyabruk)! - Cardano addresses, instead of "use your Cardano library".
+  
+  `CardanoAccountView.deriveAddress(i, { change })` returns the Shelley BASE
+  address, and `cardanoBaseAddress(paymentKey, stakeKey)` is exported for callers
+  holding keys of their own. The SDK already soft-derived the keys; only the
+  assembly was missing.
+  
+      header(1) || blake2b224(payment_vkey) || blake2b224(stake_vkey)
+  
+  Header `0x01` — address type 0, network id 1 — bech32 (not bech32m) under the
+  HRP `addr`, exactly as the firmware's `CardanoAddress.cpp` builds it. A base
+  address commits to BOTH keys, which is why the function takes two: an address
+  built from the payment key alone is an *enterprise* address, a different thing
+  that cannot delegate its stake. The stake key is the one at `2/0`.
+
+- [#22](https://github.com/ERAWLT/era-connect-sdk/pull/22) [`e5ec1e0`](https://github.com/ERAWLT/era-connect-sdk/commit/e5ec1e08460f539afda63039af0ebbca977339de) Thanks [@gsyabruk](https://github.com/gsyabruk)! - The whole Cosmos family is addressable, Ethermint included.
+  
+  `COSMOS_CHAINS` is the registry the firmware's `CosmosCoinInfo` table declares:
+  33 zones with their HRP and SLIP-44. Twenty-four of them share coin type 118,
+  so the export carries ONE key for all of them and only the HRP differs —
+  **enumerate the registry, never the export's entries**, or a caller sees two
+  dozen identical rows for the same address.
+  
+  - `cosmos()` with no argument is unchanged: the shared 118 account.
+  - `cosmos('kava')` resolves the entry that zone is actually derived under —
+    the six non-118 chains have their own coin types (Secret 529, Cronos 394,
+    Kava 459, Terra and Terra Classic 330, THORChain 931).
+  - `availableCosmosChains()` lists only the zones a given export can serve.
+  - `deriveAddress(i, { chain })` picks the hashing as well as the HRP;
+    `{ prefix }` stays the escape hatch for zones the registry does not carry and
+    always means the classic recipe.
+  
+  **Ethermint** (Injective, Evmos, Dymension) are EVM keys wearing a Cosmos coat:
+  their account is `m/44'/60'` and the bech32 payload is the ETHEREUM address,
+  not `sha256+ripemd160`. `cosmos('injective')` therefore resolves the EVM
+  account and encodes with `ethermintAddressFromPublicKey`, which is also
+  exported. Encoding one of these with the classic recipe yields a well-formed
+  `inj1…` for a different account entirely, so the two recipes are separate
+  functions rather than a flag.
+
+- [#22](https://github.com/ERAWLT/era-connect-sdk/pull/22) [`ea23894`](https://github.com/ERAWLT/era-connect-sdk/commit/ea23894652387a8f5b30fa1e3accb0a1ecaa6a8a) Thanks [@gsyabruk](https://github.com/gsyabruk)! - The two Ledger EVM schemes are visible.
+  
+  The device exports three EVM derivations and `evm()` answers only the standard
+  one, so the other two were in the export and unreachable. They are not
+  interchangeable with it, or with each other:
+  
+  - `evmLedgerLive()` — ten fully derived LEAVES at `m/44'/60'/<n>'/0/0`, one key
+    per account with nothing to derive further. Asking such a view for index 1
+    throws rather than deriving below a leaf.
+  - `evmLedgerLegacy()` — an account whose addresses sit ONE level below it,
+    `m/44'/60'/0'/<index>`, not two. Deriving it like the standard account gives
+    a different address.
+  
+  Ledger Live leaves and the Ethermint keys share a path shape; the chain code is
+  what separates them, and only the former are returned here.
+  
+  `derivePublicKeyChild` is exported for the single-step case.
+
+- [#22](https://github.com/ERAWLT/era-connect-sdk/pull/22) [`21c584b`](https://github.com/ERAWLT/era-connect-sdk/commit/21c584bb68b30b173c57107f9a02cc31ac0a4098) Thanks [@gsyabruk](https://github.com/gsyabruk)! - `solana()` entries now say which derivation scheme they belong to.
+  
+  The device ships all three Solana derivations, and the firmware tells them
+  apart by PATH DEPTH alone — all three carry the same `Derivation::Solana`.
+  `index` reads the third path level, so before this three different accounts all
+  reported index 0 with three different addresses, and two reported each of 1..4.
+  
+  - `view.scheme` is `single` (`m/44'/501'`), `account` (`m/44'/501'/<n>'`) or
+    `sub-account` (`m/44'/501'/<n>'/0'`).
+  - `solana({ scheme })` filters, which is what a wallet showing one account list
+    actually wants.
+  - `index` is documented as unique only WITHIN a scheme.
+  
+  Additive: an unfiltered `solana()` still returns every key the export shipped.
+
+- [#22](https://github.com/ERAWLT/era-connect-sdk/pull/22) [`7599f71`](https://github.com/ERAWLT/era-connect-sdk/commit/7599f71f8eb4badc23f7448adb6d0339ab78e559) Thanks [@gsyabruk](https://github.com/gsyabruk)! - `accounts.btc({ purpose: 86 }).deriveAddress()` now returns a taproot address
+  instead of throwing.
+  
+  **This is a behaviour change, and the behaviour it replaces was actively
+  harmful.** The SDK used to refuse purpose 86 and tell the caller to derive it
+  "from `xpub()` with your Bitcoin library". A consumer did exactly that, omitted
+  the BIP-341 tweak, and shipped a Receive screen offering a `bc1p…` built from
+  the untweaked internal key — a valid address that no BIP-86 signer, the ERA
+  device included, can key-path spend.
+  
+  The witness program is the tweaked output key, never the BIP-32 child key:
+  
+  ```
+  P = lift_x(x(child))            // BIP-340 lift: always the even-Y point
+  t = int(taggedHash("TapTweak", x(P)))
+  Q = P + t*G
+  program = x(Q)                  // bech32m, witness version 1
+  ```
+  
+  `btcTaprootAddressFromPublicKey(publicKey33, hrp)` is exported for callers who
+  hold a key rather than an account view. No new dependency: `@noble/curves`
+  already exposes `lift_x` and the tagged hash, and `@scure/base` already exports
+  `bech32m`.
+  
+  If you were catching `invalid-props` from `deriveAddress()` on a purpose-86
+  view as a supported control-flow path, that catch is now dead code.
+
+- [#22](https://github.com/ERAWLT/era-connect-sdk/pull/22) [`2a3ee5b`](https://github.com/ERAWLT/era-connect-sdk/commit/2a3ee5bb77af658857938e084a446fc03c251bd4) Thanks [@gsyabruk](https://github.com/gsyabruk)! - TON addresses, instead of "use your TON library".
+  
+  `TonAccountView.address` is the V4R2 wallet address (`UQ…`, non-bounceable —
+  the form a wallet shows for receiving), `.bounceableAddress` the `EQ…` form,
+  and `tonAddressFromPublicKey(key)` is exported.
+  
+  A TON address is not a hash of the key: it is the hash of the wallet CONTRACT
+  the key would deploy. `StateInit{code, data}` is a cell with two refs, its
+  representation hash is the account id, and the friendly form is
+  `tag || workchain || account_id || crc16` in base64url. The code cell never
+  varies, so only its hash and depth are carried — the same two constants the
+  firmware uses, not a whole embedded BOC.
+  
+  The test vector is the firmware's own device-verified regression case, and the
+  public key it uses was derived independently rather than by this package.
+
+- [#22](https://github.com/ERAWLT/era-connect-sdk/pull/22) [`7dc784e`](https://github.com/ERAWLT/era-connect-sdk/commit/7dc784e36fd0b16310f827272e3565bfcdc82df6) Thanks [@gsyabruk](https://github.com/gsyabruk)! - Litecoin, Dogecoin and Dash are now named and addressable, and `evm()` no
+  longer answers with a leaf.
+  
+  **Altcoins.** The SDK signed PSBTs for these three (`PsbtCoin.ltc`, `.doge`,
+  `.dash`) long before it could name an address for them: `classify` returned
+  `unknown` and there was no view, so a caller holding a perfectly good Litecoin
+  account had no way to ask where to receive. They are now classified at their
+  own mainnet coin types — 2', 3', 5' — and `wallet.litecoin()`,
+  `.dogecoin()`, `.dash()` return a `UtxoAccountView`.
+  
+  The encoding is the machinery Bitcoin already uses under different version
+  bytes, taken from each coin's `CoinInfo` in the firmware: LTC 48/50 (`L…`,
+  `M…`, `ltc1q…`), DOGE 30/22 (`D…`), DASH 76/16 (`X…`).
+  `p2pkhAddressFromPublicKey` and `nestedSegwitAddressFromPublicKey` take the
+  version byte explicitly and are exported; the Bitcoin-specific helpers now
+  delegate to them and keep their signatures.
+  
+  **`evm()` guard.** `classify` reads only the first two path levels, and three
+  different things start `m/44'/60'`: the account, the Ledger Live leaves
+  `m/44'/60'/<n>'/0/0`, and the Ethermint keys Injective / Evmos / Dymension are
+  exported under. `evm()` took the first entry that classified as evm, so it
+  could hand back a leaf — and a view over a leaf reports the leaf as its account
+  path and derives two levels below it, answering a real key at a nonsense path.
+  It now requires an account-shaped entry (depth 3).
+
 ## 0.7.0
 
 ### Minor Changes
