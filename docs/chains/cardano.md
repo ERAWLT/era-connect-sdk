@@ -27,10 +27,15 @@ ada.publicKey;        // 32-byte account vkey
 ada.chainCode;
 ada.deriveKey(0, 0);  // payment vkey #0 (role 0), change = role 1, stake = role 2
 ada.pathFor(0, 0);    // "m/1852'/1815'/0'/0/0"
+
+ada.deriveAddress(0);                    // 'addr1…' receive
+ada.deriveAddress(0, { change: true });  // change branch
 ```
 
-Address assembly (bech32 `addr1…`) stays with your Cardano tooling — build it
-from `deriveKey(0, i)` + `deriveKey(2, 0)`.
+A Shelley **base** address joins the payment key at `<role>/<index>` to the
+stake key at `2/0`, so it commits to both — that is what `deriveAddress`
+builds. `cardanoBaseAddress(paymentKey, stakeKey)` does the same assembly for
+callers holding keys of their own.
 
 ## 1. Generate the sign request
 

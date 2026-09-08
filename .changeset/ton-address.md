@@ -17,7 +17,3 @@ firmware uses, not a whole embedded BOC.
 
 The test vector is the firmware's own device-verified regression case, and the
 public key it uses was derived independently rather than by this package.
-
-V5R1 is deliberately not implemented: the firmware declares it, but every
-wallet-link profile clamps TON to derivation index 0, so no export carries it
-and an implementation could not be exercised against real device output.

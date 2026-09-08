@@ -17,6 +17,7 @@ account. `purpose` picks another script type, `testnet` picks another network:
 accounts.btc();                               // m/84'/0'/0' — bc1q…, xpub/zpub
 accounts.btc({ purpose: 44 });                // m/44'/0'/0' — 1…
 accounts.btc({ purpose: 49 });                // m/49'/0'/0' — 3…
+accounts.btc({ purpose: 86 });                // m/86'/0'/0' — bc1p…, taproot
 accounts.btc({ testnet: true });              // m/84'/1'/0' — tb1q…, tpub/vpub
 accounts.btc({ testnet: true, purpose: 49 }); // m/49'/1'/0' — 2…
 ```
@@ -114,9 +115,17 @@ const request = era.btc.generatePsbtSignRequest({ psbt, coin: 'ltc' }); // 'doge
 
 Everything else — the signed-not-finalized reply, `verifySignedPsbt` as the
 mandatory binding, finalize + broadcast with your own stack — is identical.
-Linked account paths: LTC `m/84'/2'/0'`, DOGE `m/44'/3'/0'`, DASH `m/44'/5'/0'`
-(`accounts.keys` carries them with `chain: 'unknown'` — the classifier maps
-only coin-type 0' to `btc`; find these entries by their derivation path).
+Each has its own account view, at its own mainnet coin type:
+
+```ts
+accounts.litecoin()!.deriveAddress(0);  // 'ltc1q…' — m/84'/2'/0'
+accounts.dogecoin()!.deriveAddress(0);  // 'D…'     — m/44'/3'/0'
+accounts.dash()!.deriveAddress(0);      // 'X…'     — m/44'/5'/0'
+```
+
+Litecoin carries three script types where an export offers them —
+`litecoin({ purpose: 49 })` is `M…`, `{ purpose: 44 }` is `L…`. The version
+bytes differ from Bitcoin's, so a Litecoin P2SH address starts `M`, not `3`.
 Bitcoin Cash is NOT offered on this path — its FORKID sighash needs the
 device's structured envelope. It has its own module: see
 [Bitcoin Cash](bch.md) (`@hwlt/era-connect/bch`).
