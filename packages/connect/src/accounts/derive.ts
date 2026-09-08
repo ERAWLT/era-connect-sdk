@@ -161,6 +161,31 @@ export function btcNestedSegwitAddressFromPublicKey(
  * account entirely, which is why the two live in separate functions rather
  * than behind a flag.
  */
+/**
+ * Cardano Shelley BASE address (`addr1…`): payment key and stake key joined.
+ *
+ *     header(1) || blake2b224(payment_vkey) || blake2b224(stake_vkey)
+ *
+ * The header is `0x01` — address type 0 (base), network id 1 (mainnet) — and
+ * the whole 57 bytes are bech32 (not bech32m) under the HRP `addr`, exactly as
+ * `CardanoAddress.cpp` builds it.
+ *
+ * A base address commits to BOTH keys, which is why this takes two: an address
+ * built from the payment key alone is an *enterprise* address, a different
+ * thing that cannot delegate its stake.
+ */
+export function cardanoBaseAddress(paymentKey32: Uint8Array, stakeKey32: Uint8Array): string {
+  if (paymentKey32.length !== 32 || stakeKey32.length !== 32) {
+    throw new EraSdkError('invalid-props', 'cardano base address needs two 32-byte keys');
+  }
+  const payload = concatBytes(
+    new Uint8Array([0x01]),
+    blake2b(paymentKey32, { dkLen: 28 }),
+    blake2b(stakeKey32, { dkLen: 28 }),
+  );
+  return bech32.encode('addr', bech32.toWords(payload), 200);
+}
+
 export function ethermintAddressFromPublicKey(publicKey33: Uint8Array, prefix: string): string {
   const payload = keccak_256(uncompressed(publicKey33).slice(1)).slice(12);
   return bech32.encode(prefix, bech32.toWords(payload));

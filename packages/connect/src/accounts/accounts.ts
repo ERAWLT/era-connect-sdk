@@ -11,6 +11,7 @@ import {
   btcP2pkhAddressFromPublicKey,
   btcP2wpkhAddressFromPublicKey,
   btcTaprootAddressFromPublicKey,
+  cardanoBaseAddress,
   cardanoSoftDerivePath,
   cosmosAddressFromPublicKey,
   derivePublicKey,
@@ -540,6 +541,19 @@ export class CardanoAccountView {
   /** Signing path for `role/index`, e.g. `pathFor(0, 0)` → `.../0/0`. */
   pathFor(role: number, index: number): string {
     return `${this.accountPath}/${role}/${index}`;
+  }
+
+  /**
+   * The Shelley base address at receive (or `change:`) `index`.
+   *
+   * A base address joins the payment key at `<role>/<index>` to the stake key
+   * at `2/0`, so it commits to both. The device builds the same 57 bytes.
+   */
+  deriveAddress(index: number, options?: { change?: boolean }): string {
+    return cardanoBaseAddress(
+      this.deriveKey(options?.change ? 1 : 0, index),
+      this.deriveKey(2, 0),
+    );
   }
 
   /** Soft-derived 32-byte verification key at `role/index` (0 payment, 1 change, 2 stake). */
