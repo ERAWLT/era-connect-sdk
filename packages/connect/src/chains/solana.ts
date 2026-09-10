@@ -35,8 +35,21 @@ export interface SolSignRequestProps {
   /** Defaults to `transaction`. */
   readonly signType?: SolSignType;
   /**
-   * The 3-level hardened account path `m/44'/501'/idx'` — the exported
+   * The signer's derivation path, fully hardened, 2 to 4 levels — the exported
    * account IS the signer (Ed25519 has no public child derivation).
+   *
+   * The device exports THREE Solana derivations, told apart by depth alone:
+   * `m/44'/501'` ("Single Account Path", what the device's own Receive screen
+   * shows by default), `m/44'/501'/idx'` ("Account-based Path") and
+   * `m/44'/501'/idx'/0'` ("Sub-account Path"). See `accounts.solana()` /
+   * `SolanaScheme`.
+   *
+   * The firmware signs with the key at the FULL path it is given
+   * (`SolanaDispatcher.cpp:354-372` — `wallet.getKey(coin, *derivationPath)`),
+   * and its only gate is that the request's source fingerprint matches the
+   * master or the parent (`SolanaDispatcher.cpp:149-173`). So all three depths
+   * sign; this used to refuse two of them and made the device's own default
+   * address unspendable through the SDK.
    */
   readonly path: string;
   readonly xfp: string | number;
@@ -67,10 +80,13 @@ export class SolanaChain {
   generateSignRequest(props: SolSignRequestProps): SignRequest<SolSignatureResult> {
     const requestId = resolveRequestId(this.context, props.requestId);
     const path = parsePath(props.path);
-    if (path.length !== 3 || !path.every((l) => l.hardened)) {
+    // 2..4 fully hardened levels: the three derivations the device exports. The
+    // coin type is deliberately NOT checked — the guard never checked it, and
+    // adding that in a minor would refuse paths that sign today.
+    if (path.length < 2 || path.length > 4 || !path.every((l) => l.hardened)) {
       throw new EraSdkError(
         'invalid-props',
-        `Solana signing path must be the 3-level hardened account path (m/44'/501'/idx'), got ${props.path}`,
+        `Solana signing path must be fully hardened and 2 to 4 levels (m/44'/501', m/44'/501'/idx', m/44'/501'/idx'/0'), got ${props.path}`,
       );
     }
     const xfp = normalizeXfp(props.xfp);
