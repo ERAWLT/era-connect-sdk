@@ -788,7 +788,7 @@ base64 form.
 |---|---|---|
 | `1` | bytes | `requestId` — UUID, a **bare** byte string on this chain (see [§5](#5-device-specifics-vs-the-keystone-standard)) |
 | `2` | bytes | `signData` — the serialized Solana **message** (or raw message bytes) |
-| `3` | `crypto-keypath` (tag 304) | `m/44'/501'/idx'` + fingerprint |
+| `3` | `crypto-keypath` (tag 304) | the signer entry's path (2-4 hardened levels) + fingerprint |
 | `4` | bytes | signer Ed25519 public key (32 bytes) |
 | `5` | text | `origin` |
 | `6` | uint | `version` = `1` |
@@ -798,8 +798,10 @@ base64 form.
 ([`@solana/web3.js`](https://solana-labs.github.io/solana-web3.js/) `Message`/
 `VersionedMessage`). The device signs the bytes **verbatim** (no off-chain prefix).
 
-> Note the path is the 3-level hardened account path `m/44'/501'/idx'` (matching what the
-> device exported in §2), **not** a 5-level path.
+> Note the path is the exported entry's OWN path (§2), fully hardened and 2 to 4
+> levels — `m/44'/501'` (Single Account Path), `m/44'/501'/idx'` (Account-based)
+> or `m/44'/501'/idx'/0'` (Sub-account) — **not** a 5-level path. The device
+> derives at the full path it is given, so the depth selects the key.
 
 **Response — `sol-signature`** (tag `1102`): map `{1: requestId, 2: signature}` where
 signature is the **64-byte** Ed25519 signature.

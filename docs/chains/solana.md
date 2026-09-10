@@ -5,9 +5,10 @@ Wire types: `sol-sign-request` (1101) → `sol-signature` (1102).
 Two Solana-specific facts drive everything here:
 
 - **Ed25519 has no public child derivation.** The device pre-derives hardened
-  accounts (`m/44'/501'/0'…9'`) and exports each as its own entry — the entry
-  IS the signer, and its public key (base58) IS the address. Sign requests
-  therefore use the **3-level hardened account path**, not a 5-level path.
+  accounts and exports each as its own entry — the entry IS the signer, and its
+  public key (base58) IS the address. A sign request therefore carries the
+  ENTRY'S OWN path: fully hardened, **2 to 4 levels** depending on the scheme
+  (see below), never a 5-level `…/0/0`.
 - **The device signs `signData` verbatim.** No prefix, no transform. That
   makes versioned (v0) transactions work unchanged — and makes it YOUR job to
   pass message bytes, not a serialized signed-tx envelope.
@@ -39,7 +40,7 @@ IS a signer and there is nothing to derive beyond what the export carries.
 const sol = accounts.solana({ scheme: 'account' })[0];  // m/44'/501'/<n>'
 const request = era.solana.generateSignRequest({
   signData: messageBytes,          // compiled message (see below)
-  path: sol.path,                  // "m/44'/501'/0'" — 3 levels, all hardened
+  path: sol.path,                  // the entry's own path — pass it through, never rebuild it
   xfp: sol.xfp,
   publicKey: sol.publicKey,        // or address: sol.address
   // signType: SolanaChain.SignType.message  ← off-chain messages only
