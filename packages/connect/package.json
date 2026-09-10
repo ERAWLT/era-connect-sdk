@@ -202,10 +202,10 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@noble/curves": "^1.8.1",
-    "@noble/hashes": "^1.7.1",
-    "@scure/base": "^1.2.4",
-    "@scure/bip32": "^1.6.2",
+    "@noble/curves": "^2.4.0",
+    "@noble/hashes": "^2.4.0",
+    "@scure/base": "^2.4.0",
+    "@scure/bip32": "^2.4.0",
     "fflate": "^0.8.2"
   },
   "devDependencies": {
