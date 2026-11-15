@@ -11,6 +11,16 @@ updates:
       runtime:
         patterns: ['@noble/*', '@scure/*', 'fflate']
     ignore:
+      # Majors of the crypto and CBOR libraries change module names and APIs
+      # the code calls (@noble v2 dropped ProjectivePoint, fromDER, the
+      # extension-less subpaths) and broke 0.9.0 outright. They move as one
+      # deliberate upgrade with the device fixtures, never by a bot.
+      - dependency-name: '@noble/*'
+        update-types: ['version-update:semver-major']
+      - dependency-name: '@scure/*'
+        update-types: ['version-update:semver-major']
+      - dependency-name: cbor2
+        update-types: ['version-update:semver-major']
       # The demo's versions are chosen by its Expo SDK, not by semver — bumping
       # them one at a time produces combinations Expo never ships. It moves when
       # the SDK does, as one deliberate upgrade.
