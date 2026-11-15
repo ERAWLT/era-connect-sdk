@@ -1,5 +1,11 @@
 # @hwlt/era-connect
 
+## 0.9.1
+
+### Patch Changes
+
+- [#44](https://github.com/ERAWLT/era-connect-sdk/pull/44) [`2bd6638`](https://github.com/ERAWLT/era-connect-sdk/commit/2bd6638ac2f69b8d56b81ac422cc1441f8e95bbb) Thanks [@gsyabruk](https://github.com/gsyabruk)! - Load again. 0.9.0 depended on @noble/curves, @noble/hashes, @scure/base and @scure/bip32 v2, whose module names and APIs the SDK does not use, so importing the package failed with ERR_PACKAGE_PATH_NOT_EXPORTED. Back on the v1 versions 0.8.0 shipped with; nothing else changes.
+
 ## 0.9.0
 
 ### Minor Changes
