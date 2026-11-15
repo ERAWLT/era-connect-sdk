@@ -3,7 +3,7 @@
 // its defaults and lint `dist/` instead of failing loudly, which is why the
 // file has this extension.
 {
-  "$schema": "https://biomejs.dev/schemas/2.5.11/schema.json",
+  "$schema": "https://biomejs.dev/schemas/2.6.7/schema.json",
   "files": {
     "includes": [
       "packages/**",
@@ -19,7 +19,13 @@
       // only, and quietly turn one artifact into two files that used to
       // match. Do not remove it; regenerate the fixture in BOTH repos
       // instead, and update the constant in both suites.
-      "!**/test/fixtures/accounts-testnet.json"
+      "!**/test/fixtures/accounts-testnet.json",
+      // Markdown, which Biome formats since 2.6: the README is laid out by
+      // hand (aligned comments in its examples, which Biome strips) and ships
+      // on npm as the package's page, and CHANGELOG.md is written by
+      // changesets on every release, so formatting it would fail the Version
+      // PR on whatever layout changesets emits.
+      "!**/*.md"
     ]
   },
   "formatter": {
